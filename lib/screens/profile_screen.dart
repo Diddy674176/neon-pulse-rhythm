@@ -30,17 +30,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
         padding: const EdgeInsets.all(20),
         child: NeonPanel(
           child: p == null
-              ? const Center(child: CircularProgressIndicator())
+              ? const Center(child: CircularProgressIndicator(color: NeonPalette.accent))
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       '${p['displayName']}',
                       style: const TextStyle(
-                        color: NeonPalette.cyan,
-                        fontSize: 28,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 3,
+                        color: NeonPalette.text,
+                        fontSize: 26,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.5,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -50,11 +50,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         style: const TextStyle(color: NeonPalette.text)),
                     Text('Favorite: ${p['favoriteSongId']}',
                         style: const TextStyle(color: NeonPalette.muted)),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Light profile stub — expand with avatars & rivals later.',
-                      style: TextStyle(color: NeonPalette.muted, fontSize: 12),
-                    ),
                   ],
                 ),
         ),
