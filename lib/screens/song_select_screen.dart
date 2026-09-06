@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../app_state.dart';
 import '../ui/neon_widgets.dart';
+import '../ui/page_routes.dart';
 import '../vfx/neon_palette.dart';
 import 'gameplay_screen.dart';
 import 'import_song_screen.dart';
@@ -22,10 +23,18 @@ class _SongSelectScreenState extends State<SongSelectScreen> {
   }
 
   Future<void> _openImport() async {
-    final result = await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const ImportSongScreen()),
-    );
+    final result = await Navigator.of(context).push(aetherRoute(const ImportSongScreen()));
     if (result != null && mounted) setState(() {});
+  }
+
+  Color _accentFor(String cover) {
+    try {
+      final h = cover.replaceAll('#', '');
+      if (h.length == 6) {
+        return Color(int.parse('FF$h', radix: 16));
+      }
+    } catch (_) {}
+    return NeonPalette.accent;
   }
 
   @override
@@ -52,7 +61,7 @@ class _SongSelectScreenState extends State<SongSelectScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    autoOn ? 'Auto Play will hit Perfect for you' : 'Tap a song to play',
+                    autoOn ? 'Auto Play will hit Perfect for you' : 'Tap dark tiles on the hit line',
                     style: const TextStyle(color: NeonPalette.muted, fontSize: 13),
                   ),
                 ),
@@ -75,25 +84,16 @@ class _SongSelectScreenState extends State<SongSelectScreen> {
               itemCount: songs.length,
               itemBuilder: (context, i) {
                 final s = songs[i];
+                final durSec = (s.durationMs / 1000).round();
                 return Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: NeonPanel(
-                    child: ListTile(
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => GameplayScreen(song: s, practice: widget.practice),
-                        ),
-                      ),
-                      leading: Icon(
-                        s.isImported ? Icons.audio_file_outlined : Icons.music_note_outlined,
-                        color: NeonPalette.text,
-                      ),
-                      title: Text(s.title, style: const TextStyle(color: NeonPalette.text, fontWeight: FontWeight.w600)),
-                      subtitle: Text(
-                        '${s.artist} · ${s.bpm.toStringAsFixed(0)} BPM',
-                        style: const TextStyle(color: NeonPalette.muted, fontSize: 12),
-                      ),
-                      trailing: const Icon(Icons.chevron_right, color: NeonPalette.muted),
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: SongCard(
+                    title: s.title,
+                    subtitle: '${s.artist} · ${s.bpm.toStringAsFixed(0)} BPM · ${durSec}s',
+                    badge: s.isImported ? 'IMPORTED' : s.difficulties.first,
+                    accent: _accentFor(s.coverColor),
+                    onTap: () => Navigator.of(context).push(
+                      aetherRoute(GameplayScreen(song: s, practice: widget.practice)),
                     ),
                   ),
                 );
