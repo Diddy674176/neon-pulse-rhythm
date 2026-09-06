@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 
 import '../platform/native_fs.dart' as nfs;
 import 'audio_clock.dart';
+import 'procedural_tracks.dart';
 
 /// Plays song audio and exposes [AudioClock] from the player position.
 class AudioService implements AudioClock {
@@ -109,7 +110,7 @@ class AudioService implements AudioClock {
     await setVolumes();
   }
 
-  /// Prefer asset/b64 for catalog tracks; device file for imports.
+  /// Prefer procedural beds for built-in catalog; device file for imports.
   Future<void> loadSongAudio({
     required String audioPath,
     required bool isImported,
@@ -117,6 +118,12 @@ class AudioService implements AudioClock {
     if (isImported) {
       await loadFile(audioPath);
     } else {
+      // Prefer tiny procedural beds for built-in catalog (reliable on Pages).
+      final wav = ProceduralTracks.maybeBuild(audioPath);
+      if (wav != null) {
+        await _playBytes(wav, ext: 'wav');
+        return;
+      }
       await loadAssetOrB64(audioPath);
     }
   }
