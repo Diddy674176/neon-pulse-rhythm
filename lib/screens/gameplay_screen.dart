@@ -38,7 +38,7 @@ class _GameplayScreenState extends State<GameplayScreen> {
   Future<void> _boot() async {
     try {
       final app = AppState.instance;
-      final chart = await ChartLoader().loadAsset(widget.song.chartPath);
+      final chart = await ChartLoader().loadForSong(widget.song);
       final timing = TimingEngine(
         audioLatencyOffsetMs: app.settings.audioLatencyOffsetMs,
         touchLatencyOffsetMs: app.settings.touchLatencyOffsetMs,
@@ -47,15 +47,23 @@ class _GameplayScreenState extends State<GameplayScreen> {
       if (app.audio != null) {
         final audio = app.audio!;
         try {
-          await audio.loadAssetOrB64(widget.song.audioPath);
+          await audio.loadSongAudio(
+            audioPath: widget.song.audioPath,
+            isImported: widget.song.isImported,
+          );
           clock = audio;
           _posPoll = Timer.periodic(const Duration(milliseconds: 8), (_) {
             audio.refreshPosition();
           });
         } catch (_) {
+          // Imported tracks need real audio — surface error instead of silent sim.
+          if (widget.song.isImported) rethrow;
           clock = SimulatedAudioClock();
         }
       } else {
+        if (widget.song.isImported) {
+          throw StateError('Audio service unavailable for imported track.');
+        }
         clock = SimulatedAudioClock();
       }
       _clock = clock;
