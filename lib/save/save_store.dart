@@ -6,6 +6,7 @@ class SaveStore {
   static const _settingsKey = 'aether_settings_v1';
   static const _profileKey = 'aether_profile_v1';
   static const _scoresKey = 'aether_scores_v1';
+  static const _onboardKey = 'aether_onboard_v1';
 
   Future<GameSettings> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -57,5 +58,15 @@ class SaveStore {
       profile['bestScore'] = result['score'];
     }
     await saveProfile(profile);
+  }
+
+  Future<bool> loadSeenOnboarding() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_onboardKey) ?? false;
+  }
+
+  Future<void> saveSeenOnboarding(bool seen) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_onboardKey, seen);
   }
 }
