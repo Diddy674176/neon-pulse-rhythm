@@ -8,10 +8,12 @@ ThemeData buildAetherTheme() {
     fontFamily: 'Roboto',
     scaffoldBackgroundColor: NeonPalette.bg,
     colorScheme: const ColorScheme.dark(
-      primary: NeonPalette.cyan,
-      secondary: NeonPalette.magenta,
+      primary: NeonPalette.accent,
+      secondary: NeonPalette.text,
       surface: NeonPalette.bgElevated,
       error: NeonPalette.danger,
+      onPrimary: NeonPalette.bg,
+      onSurface: NeonPalette.text,
     ),
   );
   return base.copyWith(
@@ -20,23 +22,29 @@ ThemeData buildAetherTheme() {
       elevation: 0,
       centerTitle: true,
       titleTextStyle: TextStyle(
-        color: NeonPalette.cyan,
-        fontSize: 20,
-        fontWeight: FontWeight.w800,
-        letterSpacing: 3,
+        color: NeonPalette.text,
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 1.2,
       ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: NeonPalette.cyan.withOpacity(0.15),
-        foregroundColor: NeonPalette.cyan,
-        side: const BorderSide(color: NeonPalette.cyan, width: 1.4),
-        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+        backgroundColor: NeonPalette.surface,
+        foregroundColor: NeonPalette.text,
+        side: const BorderSide(color: NeonPalette.tileEdge, width: 1),
+        elevation: 0,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         textStyle: const TextStyle(
-          fontWeight: FontWeight.w700,
-          letterSpacing: 2,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 1.0,
         ),
       ),
+    ),
+    snackBarTheme: const SnackBarThemeData(
+      backgroundColor: NeonPalette.surface,
+      contentTextStyle: TextStyle(color: NeonPalette.text),
     ),
   );
 }
