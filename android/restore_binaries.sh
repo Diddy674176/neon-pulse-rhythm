@@ -9,7 +9,8 @@ restore_jar_from_b64() {
   if [[ ! -f "$b64" ]]; then
     shopt -s nullglob
     fine=("$wrapper_dir"/gradle-wrapper.jar.b64.p[0-9][0-9])
-    if ((${#fine[@]} > 0)); then
+    # Need the full set of fine MCP chunks (36 x ~2KB)
+    if ((${#fine[@]} >= 36)); then
       cat $(printf '%s\n' "${fine[@]}" | sort) > "$b64"
     else
       parts=("$wrapper_dir"/gradle-wrapper.jar.b64.[0-9]*)
