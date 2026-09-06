@@ -26,6 +26,9 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -37,8 +40,11 @@ jobs:
 
       - name: Write android/local.properties
         run: |
-          echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
-          echo "sdk.dir=$ANDROID_HOME" >> android/local.properties
+          {
+            echo "flutter.sdk=$FLUTTER_ROOT"
+            if [ -n "${ANDROID_HOME:-}" ]; then echo "sdk.dir=$ANDROID_HOME"; fi
+            if [ -n "${ANDROID_SDK_ROOT:-}" ]; then echo "sdk.dir=$ANDROID_SDK_ROOT"; fi
+          } > android/local.properties
           cat android/local.properties
 
       - name: Set up Gradle
