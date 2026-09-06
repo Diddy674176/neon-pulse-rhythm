@@ -8,7 +8,8 @@ if [[ ! -f "$b64" ]]; then
   shopt -s nullglob
   parts=("$wrapper_dir"/gradle-wrapper.jar.b64.[0-9]*)
   if ((${#parts[@]})); then
-    cat "${parts[@]}" > "$b64"
+    # sort -V for numeric order; sed fixes a known one-char MCP transcription typo in part 3
+    cat $(printf '%s\n' "${parts[@]}" | sort -V) | sed 's/M7qqEfOS0O/M7qdEfOS0O/g' > "$b64"
   fi
 fi
 base64 -d "$b64" > "$wrapper_dir/gradle-wrapper.jar"
