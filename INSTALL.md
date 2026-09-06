@@ -16,6 +16,23 @@ You can also start a build manually: **Actions → Build APK → Run workflow** 
 
 > Artifacts expire after **14 days**. Re-run the workflow anytime for a fresh APK.
 
+## Play in Chrome (no APK / no Flutter install)
+
+**Preferred:** open **https://diddy674176.github.io/neon-pulse-rhythm/**
+
+If that 404s: repo **Settings → Pages → Deploy from a branch → `gh-pages` / `(root)` → Save**.
+
+Keyboard (4 lanes): `D` `F` `J` `K` — or digits `1`–`4` (up to `1`–`6` for more lanes). Tap/click lanes on touchscreens.
+
+Local static server after a web build:
+
+```bash
+flutter build web --release --base-href "/"
+cd build/web && python3 -m http.server 8080
+```
+
+Then open http://localhost:8080/
+
 ## First run — play & import MP3
 
 1. Open **AETHER BEAT**
@@ -61,3 +78,4 @@ Release builds use the **debug keystore** so you can sideload immediately. For P
 | No sound on import | Confirm `.mp3`; check Settings volumes |
 | Chart early/late | Calibration, or re-import with Offset (ms) |
 | Permission denied picking file | Use system picker; grant music/audio access if prompted |
+| Pages URL 404 | Enable **Settings → Pages → gh-pages** branch |
