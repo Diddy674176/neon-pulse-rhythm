@@ -26,15 +26,6 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "8.7"
-
-      - name: Ensure Gradle wrapper
-        working-directory: android
-        run: gradle wrapper --gradle-version 8.7
-
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -43,6 +34,21 @@ jobs:
 
       - name: Flutter version
         run: flutter --version
+
+      - name: Write android/local.properties
+        run: |
+          echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
+          echo "sdk.dir=$ANDROID_HOME" >> android/local.properties
+          cat android/local.properties
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.7"
+
+      - name: Ensure Gradle wrapper
+        working-directory: android
+        run: gradle wrapper --gradle-version 8.7
 
       - name: Get packages
         run: flutter pub get
