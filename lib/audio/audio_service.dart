@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -53,6 +54,18 @@ class AudioService implements AudioClock {
     await setVolumes();
   }
 
+  Future<void> _playBytes(Uint8List bytes, {String ext = 'ogg'}) async {
+    if (kIsWeb) {
+      await _player.setSource(BytesSource(bytes));
+    } else {
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/aether_track.$ext');
+      await file.writeAsBytes(bytes, flush: true);
+      await _player.setSource(DeviceFileSource(file.path));
+    }
+    await setVolumes();
+  }
+
   /// Decode a `.b64` sibling asset if the binary was shipped as text.
   Future<void> loadAssetOrB64(String assetPath) async {
     try {
@@ -66,26 +79,21 @@ class AudioService implements AudioClock {
         final p1 = await rootBundle.loadString('$assetPath.b64.1');
         b64 = p0 + p1;
       }
-      final bytes = base64Decode(b64);
-      final dir = await getTemporaryDirectory();
-      final name = assetPath.split('/').last;
-      final file = File('${dir.path}/$name');
-      await file.writeAsBytes(bytes, flush: true);
-      await _player.setSource(DeviceFileSource(file.path));
-      await setVolumes();
+      final bytes = Uint8List.fromList(base64Decode(b64));
+      final ext = assetPath.contains('.') ? assetPath.split('.').last : 'ogg';
+      await _playBytes(bytes, ext: ext);
     }
   }
 
   Future<void> loadBytes(Uint8List bytes, {String ext = 'ogg'}) async {
-    final dir = await getTemporaryDirectory();
-    final file = File('${dir.path}/aether_track.$ext');
-    await file.writeAsBytes(bytes, flush: true);
-    await _player.setSource(DeviceFileSource(file.path));
-    await setVolumes();
+    await _playBytes(bytes, ext: ext);
   }
 
   /// Load a device file (e.g. imported MP3 under app documents).
   Future<void> loadFile(String path) async {
+    if (kIsWeb) {
+      throw UnsupportedError('Imported device files are not supported on web.');
+    }
     final file = File(path);
     if (!await file.exists()) {
       throw StateError('Audio file missing: $path');
