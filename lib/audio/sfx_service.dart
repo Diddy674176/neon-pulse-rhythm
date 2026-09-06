@@ -48,14 +48,25 @@ class SfxService {
       final data = await rootBundle.load('assets/audio/$name.ogg');
       return data.buffer.asUint8List();
     } catch (_) {
-      try {
-        final b64 = await rootBundle.loadString('assets/audio/$name.ogg.b64');
-        return Uint8List.fromList(base64Decode(b64));
-      } catch (_) {
-        final p0 = await rootBundle.loadString('assets/audio/$name.ogg.b64.0');
-        final p1 = await rootBundle.loadString('assets/audio/$name.ogg.b64.1');
-        return Uint8List.fromList(base64Decode(p0 + p1));
+      final b64 = await _loadB64Parts('assets/audio/$name.ogg.b64');
+      return Uint8List.fromList(base64Decode(b64));
+    }
+  }
+
+  Future<String> _loadB64Parts(String basePath) async {
+    try {
+      return await rootBundle.loadString(basePath);
+    } catch (_) {
+      final buf = StringBuffer();
+      for (var i = 0; i < 32; i++) {
+        try {
+          buf.write(await rootBundle.loadString('$basePath.$i'));
+        } catch (_) {
+          if (i == 0) rethrow;
+          break;
+        }
       }
+      return buf.toString();
     }
   }
 

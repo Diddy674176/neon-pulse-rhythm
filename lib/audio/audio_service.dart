@@ -64,21 +64,32 @@ class AudioService implements AudioClock {
   }
 
   /// Decode a `.b64` sibling asset if the binary was shipped as text.
+  /// Supports single `.b64` or numbered parts `.b64.0` … `.b64.N`.
   Future<void> loadAssetOrB64(String assetPath) async {
     try {
       await loadAsset(assetPath);
     } catch (_) {
-      String b64;
-      try {
-        b64 = await rootBundle.loadString('$assetPath.b64');
-      } catch (_) {
-        final p0 = await rootBundle.loadString('$assetPath.b64.0');
-        final p1 = await rootBundle.loadString('$assetPath.b64.1');
-        b64 = p0 + p1;
-      }
+      final b64 = await _loadB64Parts('$assetPath.b64');
       final bytes = Uint8List.fromList(base64Decode(b64));
       final ext = assetPath.contains('.') ? assetPath.split('.').last : 'ogg';
       await _playBytes(bytes, ext: ext);
+    }
+  }
+
+  Future<String> _loadB64Parts(String basePath) async {
+    try {
+      return await rootBundle.loadString(basePath);
+    } catch (_) {
+      final buf = StringBuffer();
+      for (var i = 0; i < 32; i++) {
+        try {
+          buf.write(await rootBundle.loadString('$basePath.$i'));
+        } catch (_) {
+          if (i == 0) rethrow;
+          break;
+        }
+      }
+      return buf.toString();
     }
   }
 
