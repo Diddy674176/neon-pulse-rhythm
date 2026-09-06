@@ -52,6 +52,7 @@ class _GameplayScreenState extends State<GameplayScreen> {
         settings: app.settings,
         timing: timing,
         haptics: app.haptics,
+        sfx: app.sfx,
         practiceMode: widget.practice,
         onFinished: _onFinished,
       );
@@ -88,12 +89,15 @@ class _GameplayScreenState extends State<GameplayScreen> {
     final score = _game!.controller.score;
     AppState.instance.save.recordScore(widget.song.id, score.toJson());
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => ResultsScreen(
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => ResultsScreen(
           song: widget.song,
           score: score,
           practice: widget.practice,
         ),
+        transitionDuration: const Duration(milliseconds: 220),
+        transitionsBuilder: (_, a, __, child) =>
+            FadeTransition(opacity: a, child: child),
       ),
     );
   }
