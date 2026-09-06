@@ -20,7 +20,7 @@ class NeonPanel extends StatelessWidget {
   }
 }
 
-class NeonMenuButton extends StatelessWidget {
+class NeonMenuButton extends StatefulWidget {
   const NeonMenuButton({
     super.key,
     required this.label,
@@ -37,38 +37,58 @@ class NeonMenuButton extends StatelessWidget {
   final bool filled;
 
   @override
+  State<NeonMenuButton> createState() => _NeonMenuButtonState();
+}
+
+class _NeonMenuButtonState extends State<NeonMenuButton> {
+  bool _down = false;
+
+  @override
   Widget build(BuildContext context) {
+    final scale = _down ? 0.97 : 1.0;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
-      child: SizedBox(
-        width: double.infinity,
-        child: filled
-            ? ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: NeonPalette.text,
-                  foregroundColor: NeonPalette.bg,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+      child: AnimatedScale(
+        scale: scale,
+        duration: const Duration(milliseconds: 80),
+        child: SizedBox(
+          width: double.infinity,
+          child: Listener(
+            onPointerDown: (_) => setState(() => _down = true),
+            onPointerUp: (_) => setState(() => _down = false),
+            onPointerCancel: (_) => setState(() => _down = false),
+            child: widget.filled
+                ? ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: NeonPalette.text,
+                      foregroundColor: NeonPalette.bg,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    onPressed: widget.onPressed,
+                    child: _labelRow(NeonPalette.bg),
+                  )
+                : OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: widget.accent,
+                      side: BorderSide(
+                        color: _down ? NeonPalette.accent : NeonPalette.tileEdge,
+                        width: 1,
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                      backgroundColor: _down ? NeonPalette.bgElevated : NeonPalette.surface,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    onPressed: widget.onPressed,
+                    child: _labelRow(widget.accent),
                   ),
-                ),
-                onPressed: onPressed,
-                child: _labelRow(NeonPalette.bg),
-              )
-            : OutlinedButton(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: accent,
-                  side: BorderSide(color: NeonPalette.tileEdge, width: 1),
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-                  backgroundColor: NeonPalette.surface,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                onPressed: onPressed,
-                child: _labelRow(accent),
-              ),
+          ),
+        ),
       ),
     );
   }
@@ -77,12 +97,12 @@ class NeonMenuButton extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        if (icon != null) ...[
-          Icon(icon, color: color, size: 22),
+        if (widget.icon != null) ...[
+          Icon(widget.icon, color: color, size: 22),
           const SizedBox(width: 10),
         ],
         Text(
-          label,
+          widget.label,
           style: TextStyle(
             color: color,
             fontWeight: FontWeight.w600,
@@ -91,6 +111,104 @@ class NeonMenuButton extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class SongCard extends StatelessWidget {
+  const SongCard({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.badge,
+    this.accent = NeonPalette.accent,
+  });
+
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  final String? badge;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: NeonPalette.bgElevated,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: NeonPalette.tileEdge),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 14, 12, 14),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: NeonPalette.surface,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: NeonPalette.tileEdge),
+                  ),
+                  child: Icon(Icons.music_note_rounded, color: accent, size: 24),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          color: NeonPalette.text,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: const TextStyle(
+                          color: NeonPalette.muted,
+                          fontSize: 12,
+                        ),
+                      ),
+                      if (badge != null) ...[
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: NeonPalette.surface,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: NeonPalette.tileEdge),
+                          ),
+                          child: Text(
+                            badge!,
+                            style: const TextStyle(
+                              color: NeonPalette.accent,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const Icon(Icons.play_arrow_rounded, color: NeonPalette.muted, size: 28),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
