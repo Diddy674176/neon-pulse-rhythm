@@ -1,6 +1,5 @@
-import 'dart:io';
-
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -45,6 +44,11 @@ class _ImportSongScreenState extends State<ImportSongScreen> {
       _error = null;
       _status = null;
     });
+    if (kIsWeb) {
+      setState(() => _error =
+          'MP3 import is not available in the web/PWA build. Use the Android APK.');
+      return;
+    }
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
@@ -93,14 +97,23 @@ class _ImportSongScreenState extends State<ImportSongScreen> {
       _status = 'Copying & generating chart…';
     });
     try {
-      final source = File(_pickedPath!);
-      final durationMs = await probeAudioDurationMs(source);
+      if (kIsWeb) {
+        setState(() {
+          _busy = false;
+          _error =
+              'MP3 import is not available in the web/PWA build. Use the Android APK.';
+          _status = null;
+        });
+        return;
+      }
+      final sourcePath = _pickedPath!;
+      final durationMs = await probeAudioDurationMs(sourcePath);
       // Refine duration with audioplayers when possible.
       var resolvedDuration = durationMs;
       final audio = AppState.instance.audio;
       if (audio != null) {
         try {
-          await audio.loadFile(source.path);
+          await audio.loadFile(sourcePath);
           final d = await audio.getDuration();
           if (d != null && d.inMilliseconds > 1000) {
             resolvedDuration = d.inMilliseconds;
@@ -112,7 +125,7 @@ class _ImportSongScreenState extends State<ImportSongScreen> {
       }
 
       final meta = await AppState.instance.catalog.imported.importMp3(
-        sourceMp3: source,
+        sourcePath: sourcePath,
         title: _title.text,
         artist: _artist.text,
         bpm: bpm,
