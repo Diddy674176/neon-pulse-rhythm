@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../app_state.dart';
 import '../settings/game_settings.dart';
 import '../ui/neon_widgets.dart';
+import '../ui/page_routes.dart';
 import '../vfx/neon_palette.dart';
 import 'calibration_screen.dart';
 
@@ -23,6 +24,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
     AppState.instance.settings = s;
     await AppState.instance.persistSettings();
     if (mounted) setState(() {});
+  }
+
+  Widget _slider(String label, double value, ValueChanged<double> onChanged) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(color: NeonPalette.muted, fontSize: 12)),
+        Slider(
+          value: value.clamp(0.0, 1.5),
+          min: 0,
+          max: label.contains('Speed') || label.contains('Size') ? 1.5 : 1.0,
+          activeColor: NeonPalette.accent,
+          inactiveColor: NeonPalette.tileEdge,
+          onChanged: (v) {
+            setState(() => onChanged(v));
+            _save();
+          },
+        ),
+      ],
+    );
   }
 
   @override
@@ -50,10 +71,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   title: const Text('Reduced VFX', style: TextStyle(color: NeonPalette.text)),
-                  subtitle: const Text('Smoother on phone / web', style: TextStyle(color: NeonPalette.muted, fontSize: 12)),
+                  subtitle: const Text('Smoother on phone / web (default)', style: TextStyle(color: NeonPalette.muted, fontSize: 12)),
                   value: s.reducedVfx,
                   activeThumbColor: NeonPalette.accent,
                   onChanged: (v) { setState(() => s.reducedVfx = v); _save(); },
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('High contrast lanes', style: TextStyle(color: NeonPalette.text)),
+                  subtitle: const Text('Brighter lane backgrounds', style: TextStyle(color: NeonPalette.muted, fontSize: 12)),
+                  value: s.highContrast,
+                  activeThumbColor: NeonPalette.accent,
+                  onChanged: (v) { setState(() => s.highContrast = v); _save(); },
                 ),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
@@ -62,7 +91,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   activeThumbColor: NeonPalette.accent,
                   onChanged: (v) { setState(() => s.hapticsEnabled = v); _save(); },
                 ),
+                const SizedBox(height: 8),
+                _slider('Master volume', s.masterVolume, (v) => s.masterVolume = v),
+                _slider('Music volume', s.musicVolume, (v) => s.musicVolume = v),
+                _slider('SFX volume', s.sfxVolume, (v) => s.sfxVolume = v),
+                _slider('Note speed', s.noteSpeed, (v) => s.noteSpeed = v.clamp(0.5, 1.5)),
+                _slider('Note size', s.noteSize, (v) => s.noteSize = v.clamp(0.7, 1.4)),
+                const SizedBox(height: 8),
                 const Text('Performance', style: TextStyle(color: NeonPalette.muted)),
+                const SizedBox(height: 6),
                 Wrap(
                   spacing: 8,
                   children: PerformanceMode.values.map((m) {
@@ -88,7 +125,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             label: 'CALIBRATION',
             icon: Icons.tune,
             onPressed: () async {
-              await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CalibrationScreen()));
+              await Navigator.of(context).push(aetherRoute(const CalibrationScreen()));
               setState(() => s = AppState.instance.settings);
             },
           ),
