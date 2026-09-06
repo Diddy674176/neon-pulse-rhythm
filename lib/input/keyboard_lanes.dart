@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 /// Map keyboard keys to lane indices for web/desktop play.
 int? laneForKey(LogicalKeyboardKey key, int laneCount) {
   final n = laneCount.clamp(4, 6);
-  const digitMap = <LogicalKeyboardKey, int>{
+  final digitMap = <LogicalKeyboardKey, int>{
     LogicalKeyboardKey.digit1: 0,
     LogicalKeyboardKey.digit2: 1,
     LogicalKeyboardKey.digit3: 2,
