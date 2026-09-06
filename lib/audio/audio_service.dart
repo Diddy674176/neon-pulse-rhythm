@@ -47,12 +47,13 @@ class AudioService implements AudioClock {
     await _player.setVolume((masterVolume * musicVolume).clamp(0.0, 1.0));
   }
 
+  /// Load from Flutter asset path (ogg/wav).
   Future<void> loadAsset(String assetPath) async {
     await _player.setSource(AssetSource(_stripAssetsPrefix(assetPath)));
     await setVolumes();
   }
 
-  /// Decode `.b64` or split `.b64.0`+`.b64.1` sidecars when binary is missing.
+  /// Decode a `.b64` sibling asset if the binary was shipped as text.
   Future<void> loadAssetOrB64(String assetPath) async {
     try {
       await loadAsset(assetPath);
@@ -82,6 +83,30 @@ class AudioService implements AudioClock {
     await _player.setSource(DeviceFileSource(file.path));
     await setVolumes();
   }
+
+  /// Load a device file (e.g. imported MP3 under app documents).
+  Future<void> loadFile(String path) async {
+    final file = File(path);
+    if (!await file.exists()) {
+      throw StateError('Audio file missing: $path');
+    }
+    await _player.setSource(DeviceFileSource(path));
+    await setVolumes();
+  }
+
+  /// Prefer asset/b64 for catalog tracks; device file for imports.
+  Future<void> loadSongAudio({
+    required String audioPath,
+    required bool isImported,
+  }) async {
+    if (isImported) {
+      await loadFile(audioPath);
+    } else {
+      await loadAssetOrB64(audioPath);
+    }
+  }
+
+  Future<Duration?> getDuration() => _player.getDuration();
 
   String _stripAssetsPrefix(String path) {
     const prefix = 'assets/';
@@ -123,6 +148,7 @@ class AudioService implements AudioClock {
     _posController.add(_lastPos);
   }
 
+  /// Poll position (some platforms throttle onPositionChanged).
   Future<double> refreshPosition() async {
     final d = await _player.getCurrentPosition();
     if (d != null) {
