@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/scheduler.dart';
 import '../app_state.dart';
 import '../audio/audio_clock.dart';
 import '../chart/chart_loader.dart';
 import '../chart/note.dart';
+import '../input/keyboard_lanes.dart';
 import '../game/aether_game.dart';
 import '../rhythm/timing_engine.dart';
 import '../song/song_catalog.dart';
@@ -56,7 +58,6 @@ class _GameplayScreenState extends State<GameplayScreen> {
             audio.refreshPosition();
           });
         } catch (_) {
-          // Imported tracks need real audio — surface error instead of silent sim.
           if (widget.song.isImported) rethrow;
           clock = SimulatedAudioClock();
         }
@@ -126,6 +127,24 @@ class _GameplayScreenState extends State<GameplayScreen> {
     }
   }
 
+  KeyEventResult _onKey(FocusNode node, KeyEvent event) {
+    if (_game == null) return KeyEventResult.ignored;
+    final lane = laneForKey(event.logicalKey, _game!.laneCount);
+    if (lane == null) return KeyEventResult.ignored;
+    final x = _game!.laneX(lane);
+    final y = _game!.hitLineY;
+    final pos = Offset(x, y);
+    if (event is KeyDownEvent) {
+      _game!.onPointerDown(pos);
+      return KeyEventResult.handled;
+    }
+    if (event is KeyUpEvent) {
+      _game!.onPointerUp(pos, lane);
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
   @override
   void dispose() {
     _posPoll?.cancel();
@@ -149,7 +168,10 @@ class _GameplayScreenState extends State<GameplayScreen> {
     }
     return Scaffold(
       backgroundColor: NeonPalette.bg,
-      body: SafeArea(
+      body: Focus(
+        autofocus: true,
+        onKeyEvent: _onKey,
+        child: SafeArea(
         child: Stack(
           children: [
             Positioned.fill(
@@ -232,6 +254,7 @@ class _GameplayScreenState extends State<GameplayScreen> {
               ),
           ],
         ),
+      ),
       ),
     );
   }
