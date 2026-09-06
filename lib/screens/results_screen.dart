@@ -32,30 +32,33 @@ class ResultsScreen extends StatelessWidget {
                   Text(
                     score.grade,
                     style: const TextStyle(
-                      color: NeonPalette.lime,
-                      fontSize: 72,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 8,
+                      color: NeonPalette.text,
+                      fontSize: 64,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 4,
                     ),
                   ),
-                  Text(song.title, style: const TextStyle(color: NeonPalette.text, fontSize: 20)),
+                  Text(
+                    song.title,
+                    style: const TextStyle(color: NeonPalette.muted, fontSize: 16),
+                  ),
                   const SizedBox(height: 12),
                   Text(
                     '${score.score}',
                     style: const TextStyle(
-                      color: NeonPalette.cyan,
-                      fontSize: 40,
-                      fontWeight: FontWeight.w800,
+                      color: NeonPalette.text,
+                      fontSize: 36,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   Text(
                     'ACCURACY ${(score.accuracy * 100).toStringAsFixed(2)}%  ·  MAX COMBO ${score.maxCombo}',
-                    style: const TextStyle(color: NeonPalette.muted),
+                    style: const TextStyle(color: NeonPalette.muted, fontSize: 13),
                   ),
                   const SizedBox(height: 16),
-                  _row('PERFECT', score.perfect, NeonPalette.lime),
-                  _row('GREAT', score.great, NeonPalette.cyan),
-                  _row('GOOD', score.good, NeonPalette.amber),
+                  _row('PERFECT', score.perfect, NeonPalette.text),
+                  _row('GREAT', score.great, NeonPalette.accent),
+                  _row('GOOD', score.good, NeonPalette.muted),
                   _row('MISS', score.miss, NeonPalette.danger),
                 ],
               ),
@@ -63,17 +66,18 @@ class ResultsScreen extends StatelessWidget {
             const Spacer(),
             NeonMenuButton(
               label: 'RETRY',
+              filled: true,
               onPressed: () {
                 Navigator.of(context).pushReplacement(
                   MaterialPageRoute(
-                    builder: (_) => GameplayScreen(song: song, practice: practice),
+                    builder: (_) =>
+                        GameplayScreen(song: song, practice: practice),
                   ),
                 );
               },
             ),
             NeonMenuButton(
               label: 'MENU',
-              accent: NeonPalette.magenta,
               onPressed: () {
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(builder: (_) => const MainMenuScreen()),
@@ -93,7 +97,9 @@ class ResultsScreen extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: c, fontWeight: FontWeight.w700, letterSpacing: 2)),
+          Text(label,
+              style: TextStyle(
+                  color: c, fontWeight: FontWeight.w600, letterSpacing: 1.5)),
           Text('$count', style: TextStyle(color: c, fontSize: 18)),
         ],
       ),
