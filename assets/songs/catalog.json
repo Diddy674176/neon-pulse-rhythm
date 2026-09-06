@@ -1,0 +1,15 @@
+{
+  "songs": [
+    {
+      "id": "circuit_mirage",
+      "title": "Circuit Mirage",
+      "artist": "AETHER BEAT System",
+      "bpm": 128,
+      "durationMs": 15000,
+      "difficulties": ["Normal"],
+      "chartPath": "assets/charts/circuit_mirage.json",
+      "audioPath": "assets/audio/circuit_mirage.ogg",
+      "coverColor": "#00F5FF"
+    }
+  ]
+}
