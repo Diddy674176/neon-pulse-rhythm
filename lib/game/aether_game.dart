@@ -11,6 +11,7 @@ import '../rhythm/judgment.dart';
 import '../rhythm/timing_engine.dart';
 import '../settings/game_settings.dart';
 import '../vfx/neon_palette.dart';
+import 'dart:ui' as ui;
 
 /// Flame render surface. Input stamped with audio clock from Flutter gestures.
 class AetherGame extends FlameGame {
@@ -130,7 +131,7 @@ class AetherGame extends FlameGame {
     canvas.drawRect(
       rect,
       Paint()
-        ..shader = Gradient.linear(Offset.zero, Offset(0, size.y), const [
+        ..shader = ui.Gradient.linear(Offset.zero, Offset(0, size.y), const [
           Color(0xFF12062A),
           NeonPalette.bg,
           Color(0xFF061018),
