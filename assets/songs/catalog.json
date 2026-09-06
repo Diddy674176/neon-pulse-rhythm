@@ -5,7 +5,7 @@
       "title": "Circuit Mirage",
       "artist": "AETHER BEAT System",
       "bpm": 128,
-      "durationMs": 15000,
+      "durationMs": 3750,
       "difficulties": ["Normal"],
       "chartPath": "assets/charts/circuit_mirage.json",
       "audioPath": "assets/audio/circuit_mirage.ogg",
