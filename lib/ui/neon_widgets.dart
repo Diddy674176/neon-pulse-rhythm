@@ -11,16 +11,9 @@ class NeonPanel extends StatelessWidget {
     return Container(
       padding: padding ?? const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: NeonPalette.bgElevated.withOpacity(0.85),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: NeonPalette.cyan.withOpacity(0.45)),
-        boxShadow: [
-          BoxShadow(
-            color: NeonPalette.magenta.withOpacity(0.15),
-            blurRadius: 18,
-            spreadRadius: 1,
-          ),
-        ],
+        color: NeonPalette.bgElevated,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: NeonPalette.tileEdge, width: 1),
       ),
       child: child,
     );
@@ -33,48 +26,71 @@ class NeonMenuButton extends StatelessWidget {
     required this.label,
     required this.onPressed,
     this.icon,
-    this.accent = NeonPalette.cyan,
+    this.accent = NeonPalette.text,
+    this.filled = false,
   });
 
   final String label;
   final VoidCallback onPressed;
   final IconData? icon;
   final Color accent;
+  final bool filled;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: SizedBox(
         width: double.infinity,
-        child: OutlinedButton(
-          style: OutlinedButton.styleFrom(
-            foregroundColor: accent,
-            side: BorderSide(color: accent, width: 1.5),
-            padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
-            backgroundColor: accent.withOpacity(0.08),
-          ),
-          onPressed: onPressed,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (icon != null) ...[
-                Icon(icon, color: accent),
-                const SizedBox(width: 12),
-              ],
-              Text(
-                label,
-                style: TextStyle(
-                  color: accent,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 3,
-                  fontSize: 16,
+        child: filled
+            ? ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: NeonPalette.text,
+                  foregroundColor: NeonPalette.bg,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
+                onPressed: onPressed,
+                child: _labelRow(NeonPalette.bg),
+              )
+            : OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: accent,
+                  side: BorderSide(color: NeonPalette.tileEdge, width: 1),
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                  backgroundColor: NeonPalette.surface,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                onPressed: onPressed,
+                child: _labelRow(accent),
               ),
-            ],
+      ),
+    );
+  }
+
+  Widget _labelRow(Color color) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        if (icon != null) ...[
+          Icon(icon, color: color, size: 22),
+          const SizedBox(width: 10),
+        ],
+        Text(
+          label,
+          style: TextStyle(
+            color: color,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 1.4,
+            fontSize: 15,
           ),
         ),
-      ),
+      ],
     );
   }
 }
@@ -94,47 +110,41 @@ class SafeNeonScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: NeonPalette.bg,
       floatingActionButton: floatingActionButton,
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF14082C), NeonPalette.bg, Color(0xFF03060C)],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              if (title != null)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                  child: Row(
-                    children: [
-                      if (Navigator.of(context).canPop())
-                        IconButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          icon: const Icon(Icons.arrow_back, color: NeonPalette.cyan),
-                        ),
-                      Expanded(
-                        child: Text(
-                          title!,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: NeonPalette.cyan,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 4,
-                            fontSize: 18,
-                          ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            if (title != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+                child: Row(
+                  children: [
+                    if (Navigator.of(context).canPop())
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.arrow_back, color: NeonPalette.text),
+                      )
+                    else
+                      const SizedBox(width: 48),
+                    Expanded(
+                      child: Text(
+                        title!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: NeonPalette.text,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 1.5,
+                          fontSize: 16,
                         ),
                       ),
-                      const SizedBox(width: 48),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 48),
+                  ],
                 ),
-              Expanded(child: body),
-            ],
-          ),
+              ),
+            Expanded(child: body),
+          ],
         ),
       ),
     );

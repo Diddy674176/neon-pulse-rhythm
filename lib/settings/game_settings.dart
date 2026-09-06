@@ -8,7 +8,7 @@ class GameSettings {
     this.musicVolume = 0.9,
     this.sfxVolume = 0.8,
     this.hapticsEnabled = true,
-    this.performanceMode = PerformanceMode.balanced,
+    this.performanceMode = PerformanceMode.performance,
     this.audioLatencyOffsetMs = 0,
     this.touchLatencyOffsetMs = 0,
     this.laneCount = 4,
@@ -18,6 +18,8 @@ class GameSettings {
     this.handedness = Handedness.right,
     this.showTimingNumbers = false,
     this.practiceSpeed = 1.0,
+    this.autoPlay = false,
+    this.reducedVfx = true,
   });
 
   double masterVolume;
@@ -27,13 +29,19 @@ class GameSettings {
   PerformanceMode performanceMode;
   int audioLatencyOffsetMs;
   int touchLatencyOffsetMs;
-  int laneCount;
+  int laneCount; // 4, 5, or 6
   double noteSpeed;
   double noteSize;
   bool highContrast;
   Handedness handedness;
   bool showTimingNumbers;
   double practiceSpeed;
+
+  /// When true, Perfect-timed hits fire automatically (demo / lag test).
+  bool autoPlay;
+
+  /// Throttle decorative draw work (default on for web/mobile smoothness).
+  bool reducedVfx;
 
   int get targetFpsHint {
     switch (performanceMode) {
@@ -63,10 +71,12 @@ class GameSettings {
         'handedness': handedness.name,
         'showTimingNumbers': showTimingNumbers,
         'practiceSpeed': practiceSpeed,
+        'autoPlay': autoPlay,
+        'reducedVfx': reducedVfx,
       };
 
   factory GameSettings.fromJson(Map<String, dynamic> j) {
-    PerformanceMode mode = PerformanceMode.balanced;
+    PerformanceMode mode = PerformanceMode.performance;
     for (final m in PerformanceMode.values) {
       if (m.name == j['performanceMode']) mode = m;
     }
@@ -89,6 +99,8 @@ class GameSettings {
       handedness: hand,
       showTimingNumbers: j['showTimingNumbers'] as bool? ?? false,
       practiceSpeed: (j['practiceSpeed'] as num?)?.toDouble() ?? 1.0,
+      autoPlay: j['autoPlay'] as bool? ?? false,
+      reducedVfx: j['reducedVfx'] as bool? ?? true,
     );
   }
 
