@@ -1,13 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
-import 'package:path_provider/path_provider.dart';
 
+import '../platform/native_fs.dart' as nfs;
 import 'audio_clock.dart';
 
 /// Plays song audio and exposes [AudioClock] from the player position.
@@ -58,10 +57,8 @@ class AudioService implements AudioClock {
     if (kIsWeb) {
       await _player.setSource(BytesSource(bytes));
     } else {
-      final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/aether_track.$ext');
-      await file.writeAsBytes(bytes, flush: true);
-      await _player.setSource(DeviceFileSource(file.path));
+      final path = await nfs.writeTempAudioBytes(bytes, ext);
+      await _player.setSource(DeviceFileSource(path));
     }
     await setVolumes();
   }
@@ -94,8 +91,7 @@ class AudioService implements AudioClock {
     if (kIsWeb) {
       throw UnsupportedError('Imported device files are not supported on web.');
     }
-    final file = File(path);
-    if (!await file.exists()) {
+    if (!await nfs.pathExists(path)) {
       throw StateError('Audio file missing: $path');
     }
     await _player.setSource(DeviceFileSource(path));
