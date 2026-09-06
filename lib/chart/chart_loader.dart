@@ -1,8 +1,9 @@
 import 'dart:convert';
-import 'dart:io';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 
+import '../platform/native_fs.dart' as nfs;
 import '../song/song_catalog.dart';
 import 'chart_data.dart';
 
@@ -13,7 +14,10 @@ class ChartLoader {
   }
 
   Future<ChartData> loadFile(String path) async {
-    final raw = await File(path).readAsString();
+    if (kIsWeb) {
+      throw UnsupportedError('Imported charts are not available on web.');
+    }
+    final raw = await nfs.readPathAsString(path);
     return ChartData.fromJson(jsonDecode(raw) as Map<String, dynamic>);
   }
 

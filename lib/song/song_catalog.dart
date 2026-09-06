@@ -71,12 +71,22 @@ class SongCatalog {
   final ImportedLibrary imported = ImportedLibrary();
 
   Future<void> load({String asset = 'assets/songs/catalog.json'}) async {
-    final raw = await rootBundle.loadString(asset);
-    final map = jsonDecode(raw) as Map<String, dynamic>;
-    final builtIn = (map['songs'] as List<dynamic>)
-        .map((e) => SongMeta.fromJson(Map<String, dynamic>.from(e as Map)))
-        .toList();
-    final user = await imported.loadAll();
+    List<SongMeta> builtIn = [];
+    try {
+      final raw = await rootBundle.loadString(asset);
+      final map = jsonDecode(raw) as Map<String, dynamic>;
+      builtIn = (map['songs'] as List<dynamic>)
+          .map((e) => SongMeta.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+    } catch (_) {
+      builtIn = [];
+    }
+    List<SongMeta> user = [];
+    try {
+      user = await imported.loadAll();
+    } catch (_) {
+      user = [];
+    }
     songs = [...builtIn, ...user];
   }
 
