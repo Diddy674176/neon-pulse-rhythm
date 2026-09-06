@@ -1,0 +1,43 @@
+name: Deploy Web (GitHub Pages)
+
+on:
+  push:
+    branches: [feat/vertical-slice, main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages-web
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Ensure web platform
+        run: flutter create --platforms=web .
+
+      - name: Pub get
+        run: flutter pub get
+
+      - name: Build web
+        run: flutter build web --release --base-href "/neon-pulse-rhythm/"
+
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build/web
+          force_orphan: true
+          commit_message: Deploy AETHER BEAT web build

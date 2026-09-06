@@ -1,0 +1,31 @@
+name: Deploy prebuilt web-dist to Pages
+
+on:
+  push:
+    branches: [feat/vertical-slice, main]
+    paths:
+      - 'web-dist/**'
+      - '.github/workflows/deploy-web-dist.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages-web-dist
+  cancel-in-progress: true
+
+jobs:
+  restore-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore binaries from base64 sidecars
+        run: python3 web-dist/restore.py
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./web-dist/out
+          force_orphan: true
+          commit_message: Deploy AETHER BEAT prebuilt web-dist
