@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'audio/audio_service.dart';
+import 'audio/sfx_service.dart';
 import 'haptics/haptics_service.dart';
 import 'performance/refresh_rate.dart';
 import 'save/save_store.dart';
@@ -14,10 +15,12 @@ class AppState {
   final SongCatalog catalog = SongCatalog();
   final RefreshRateService refresh = RefreshRateService();
   final HapticsService haptics = HapticsService();
+  final SfxService sfx = SfxService();
   GameSettings settings = GameSettings();
   AudioService? audio;
 
   bool ready = false;
+  bool seenOnboarding = false;
 
   /// Non-fatal subsystem warnings (menu still opens).
   final List<String> warnings = [];
@@ -32,6 +35,12 @@ class AppState {
       settings = GameSettings();
     }
 
+    try {
+      seenOnboarding = await save.loadSeenOnboarding();
+    } catch (_) {
+      seenOnboarding = false;
+    }
+
     haptics.enabled = settings.hapticsEnabled;
     try {
       refresh.detect();
@@ -44,7 +53,6 @@ class AppState {
       await catalog.load();
     } catch (e) {
       warnings.add('Catalog: $e');
-      // Keep whatever songs we already have (may be empty).
     }
 
     try {
@@ -61,6 +69,13 @@ class AppState {
       audio = null;
     }
 
+    try {
+      sfx.setVolumes(master: settings.masterVolume, sfx: settings.sfxVolume);
+      await sfx.init().timeout(const Duration(seconds: 4));
+    } catch (e) {
+      warnings.add('SFX: $e');
+    }
+
     ready = true;
   }
 
@@ -71,5 +86,11 @@ class AppState {
       master: settings.masterVolume,
       music: settings.musicVolume,
     );
+    sfx.setVolumes(master: settings.masterVolume, sfx: settings.sfxVolume);
+  }
+
+  Future<void> markOnboardingSeen() async {
+    seenOnboarding = true;
+    await save.saveSeenOnboarding(true);
   }
 }
