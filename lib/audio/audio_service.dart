@@ -52,12 +52,19 @@ class AudioService implements AudioClock {
     await setVolumes();
   }
 
+  /// Decode `.b64` or split `.b64.0`+`.b64.1` sidecars when binary is missing.
   Future<void> loadAssetOrB64(String assetPath) async {
     try {
       await loadAsset(assetPath);
     } catch (_) {
-      final b64Path = '$assetPath.b64';
-      final b64 = await rootBundle.loadString(b64Path);
+      String b64;
+      try {
+        b64 = await rootBundle.loadString('$assetPath.b64');
+      } catch (_) {
+        final p0 = await rootBundle.loadString('$assetPath.b64.0');
+        final p1 = await rootBundle.loadString('$assetPath.b64.1');
+        b64 = p0 + p1;
+      }
       final bytes = base64Decode(b64);
       final dir = await getTemporaryDirectory();
       final name = assetPath.split('/').last;
