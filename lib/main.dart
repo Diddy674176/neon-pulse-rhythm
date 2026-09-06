@@ -120,18 +120,18 @@ class _BootSplash extends StatelessWidget {
             Text(
               'AETHER BEAT',
               style: TextStyle(
-                color: NeonPalette.cyan,
+                color: NeonPalette.text,
                 fontSize: 28,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 4,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 3,
               ),
             ),
             SizedBox(height: 24),
-            CircularProgressIndicator(color: NeonPalette.magenta),
+            CircularProgressIndicator(color: NeonPalette.accent, strokeWidth: 2),
             SizedBox(height: 16),
             Text(
               'Loading…',
-              style: TextStyle(color: NeonPalette.muted, letterSpacing: 2),
+              style: TextStyle(color: NeonPalette.muted, letterSpacing: 1.5),
             ),
           ],
         ),
