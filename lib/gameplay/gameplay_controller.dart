@@ -18,6 +18,7 @@ class GameplayController {
     required this.timing,
     this.onJudgment,
     this.approachMs = 1500,
+    this.autoPlay = false,
   }) {
     notes = chart.notes.map(NoteRuntime.new).toList();
   }
@@ -27,6 +28,7 @@ class GameplayController {
   final TimingEngine timing;
   final JudgmentCallback? onJudgment;
   final double approachMs;
+  bool autoPlay;
 
   late List<NoteRuntime> notes;
   final ScoreModel score = ScoreModel();
@@ -35,20 +37,29 @@ class GameplayController {
   Judgment lastJudgment = Judgment.none;
   double lastDeltaMs = 0;
 
+  /// Reused buffer — avoids allocating a new List every frame.
+  final List<NoteRuntime> _visibleBuf = <NoteRuntime>[];
+
   double get audioTimeMs => clock.currentTimeMs;
 
   List<NoteRuntime> visibleNotes() {
     final t = audioTimeMs;
-    return notes.where((n) {
-      if (n.resolved && n.note.type != NoteType.hold) return false;
+    _visibleBuf.clear();
+    final latePad = timing.windows.goodMs + 200;
+    for (final n in notes) {
+      if (n.resolved && n.note.type != NoteType.hold) continue;
       final start = n.note.timeMs - approachMs;
-      final end = (n.note.endTimeMs ?? n.note.timeMs) + timing.windows.goodMs + 200;
-      return t >= start && t <= end;
-    }).toList();
+      final end = (n.note.endTimeMs ?? n.note.timeMs) + latePad;
+      if (t >= start && t <= end) _visibleBuf.add(n);
+    }
+    return _visibleBuf;
   }
 
+  /// Call every frame for auto-misses + optional autoplay — uses audio time.
   void tick() {
     final t = audioTimeMs;
+    if (autoPlay) _runAutoPlay(t);
+
     for (final n in notes) {
       if (n.resolved) continue;
       if (n.note.type == NoteType.hold && n.holdActive) {
@@ -56,15 +67,23 @@ class GameplayController {
           noteTimeMs: n.note.endTimeMs ?? n.note.timeMs,
           rawAudioTimeMs: t,
         )) {
-          _resolve(n, Judgment.miss, timing.deltaMs(
-            noteTimeMs: n.note.endTimeMs ?? n.note.timeMs,
-            rawAudioTimeMs: t,
-          ));
+          _resolve(
+            n,
+            Judgment.miss,
+            timing.deltaMs(
+              noteTimeMs: n.note.endTimeMs ?? n.note.timeMs,
+              rawAudioTimeMs: t,
+            ),
+          );
         }
         continue;
       }
       if (timing.shouldAutoMiss(noteTimeMs: n.note.timeMs, rawAudioTimeMs: t)) {
-        _resolve(n, Judgment.miss, timing.deltaMs(noteTimeMs: n.note.timeMs, rawAudioTimeMs: t));
+        _resolve(
+          n,
+          Judgment.miss,
+          timing.deltaMs(noteTimeMs: n.note.timeMs, rawAudioTimeMs: t),
+        );
       }
     }
     if (!finished && t >= chart.durationMs + 500) {
@@ -72,6 +91,56 @@ class GameplayController {
     }
     if (!finished && notes.every((n) => n.resolved)) {
       finished = true;
+    }
+  }
+
+  /// Fire Perfect-timed hits when |noteTime - audioTime| ≤ Perfect window.
+  void _runAutoPlay(double t) {
+    final perfect = timing.windows.perfectMs.toDouble();
+    for (final n in notes) {
+      if (n.resolved) continue;
+
+      if (n.note.type == NoteType.hold) {
+        if (!n.holdActive) {
+          final err = timing.absErrorMs(noteTimeMs: n.note.timeMs, rawAudioTimeMs: t);
+          if (err <= perfect) {
+            handleInput(LaneInputEvent(
+              kind: InputKind.holdStart,
+              lane: n.note.lane,
+              audioTimeMs: t,
+            ));
+          }
+        } else {
+          final end = n.note.endTimeMs ?? n.note.timeMs;
+          final err = timing.absErrorMs(noteTimeMs: end, rawAudioTimeMs: t);
+          if (err <= perfect) {
+            handleInput(LaneInputEvent(
+              kind: InputKind.holdEnd,
+              lane: n.note.lane,
+              audioTimeMs: t,
+            ));
+          }
+        }
+        continue;
+      }
+
+      final err = timing.absErrorMs(noteTimeMs: n.note.timeMs, rawAudioTimeMs: t);
+      if (err > perfect) continue;
+
+      if (n.note.type == NoteType.swipe) {
+        handleInput(LaneInputEvent(
+          kind: InputKind.swipe,
+          lane: n.note.lane,
+          audioTimeMs: t,
+          direction: n.note.direction,
+        ));
+      } else {
+        handleInput(LaneInputEvent(
+          kind: InputKind.tap,
+          lane: n.note.lane,
+          audioTimeMs: t,
+        ));
+      }
     }
   }
 
@@ -95,11 +164,16 @@ class GameplayController {
     if (e.kind == InputKind.holdStart && n.note.type == NoteType.hold) {
       final j = timing.judge(noteTimeMs: n.note.timeMs, rawAudioTimeMs: e.audioTimeMs);
       if (j == Judgment.miss) {
-        _resolve(n, Judgment.miss, timing.deltaMs(noteTimeMs: n.note.timeMs, rawAudioTimeMs: e.audioTimeMs));
+        _resolve(
+          n,
+          Judgment.miss,
+          timing.deltaMs(noteTimeMs: n.note.timeMs, rawAudioTimeMs: e.audioTimeMs),
+        );
         return;
       }
       n.holdActive = true;
-      n.hitDeltaMs = timing.deltaMs(noteTimeMs: n.note.timeMs, rawAudioTimeMs: e.audioTimeMs);
+      n.hitDeltaMs =
+          timing.deltaMs(noteTimeMs: n.note.timeMs, rawAudioTimeMs: e.audioTimeMs);
       return;
     }
 
@@ -117,12 +191,13 @@ class GameplayController {
     }
 
     if (n.note.type == NoteType.swipe) {
-      if (e.kind != InputKind.swipe) return;
+      if (e.kind != InputKind.swipe && e.kind != InputKind.tap) return;
     }
 
     final j = timing.judge(noteTimeMs: n.note.timeMs, rawAudioTimeMs: e.audioTimeMs);
     final d = timing.deltaMs(noteTimeMs: n.note.timeMs, rawAudioTimeMs: e.audioTimeMs);
-    if (j == Judgment.miss && !timing.isInHitWindow(noteTimeMs: n.note.timeMs, rawAudioTimeMs: e.audioTimeMs)) {
+    if (j == Judgment.miss &&
+        !timing.isInHitWindow(noteTimeMs: n.note.timeMs, rawAudioTimeMs: e.audioTimeMs)) {
       return;
     }
     _resolve(n, j, d);
