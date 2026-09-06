@@ -1,0 +1,30 @@
+name: aether_beat
+description: AETHER BEAT — original neon cyberpunk rhythm game. Audio-clock timing, offline playable.
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flame: ^1.18.0
+  flame_audio: ^2.10.0
+  audioplayers: ^6.1.0
+  shared_preferences: ^2.3.2
+  path_provider: ^2.1.4
+  collection: ^1.18.0
+  uuid: ^4.5.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/audio/
+    - assets/charts/
+    - assets/songs/
