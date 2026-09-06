@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'audio/audio_service.dart';
 import 'haptics/haptics_service.dart';
 import 'performance/refresh_rate.dart';
@@ -18,17 +19,48 @@ class AppState {
 
   bool ready = false;
 
+  /// Non-fatal subsystem warnings (menu still opens).
+  final List<String> warnings = [];
+
   Future<void> init() async {
-    settings = await save.loadSettings();
+    warnings.clear();
+
+    try {
+      settings = await save.loadSettings();
+    } catch (e) {
+      warnings.add('Settings: $e');
+      settings = GameSettings();
+    }
+
     haptics.enabled = settings.hapticsEnabled;
-    refresh.detect();
-    refresh.applySchedulerHint(settings.performanceMode);
-    await catalog.load();
-    audio = AudioService(
-      masterVolume: settings.masterVolume,
-      musicVolume: settings.musicVolume,
-    );
-    await audio!.init();
+    try {
+      refresh.detect();
+      refresh.applySchedulerHint(settings.performanceMode);
+    } catch (e) {
+      warnings.add('Refresh rate: $e');
+    }
+
+    try {
+      await catalog.load();
+    } catch (e) {
+      warnings.add('Catalog: $e');
+      // Keep whatever songs we already have (may be empty).
+    }
+
+    try {
+      audio = AudioService(
+        masterVolume: settings.masterVolume,
+        musicVolume: settings.musicVolume,
+      );
+      await audio!.init().timeout(const Duration(seconds: 8));
+    } catch (e) {
+      warnings.add('Audio: $e');
+      try {
+        await audio?.dispose();
+      } catch (_) {}
+      audio = null;
+    }
+
     ready = true;
   }
 
