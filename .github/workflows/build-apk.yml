@@ -50,11 +50,11 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: "8.9"
+          gradle-version: "8.14"
 
       - name: Ensure Gradle wrapper
         working-directory: android
-        run: gradle wrapper --gradle-version 8.9
+        run: gradle wrapper --gradle-version 8.14
 
       - name: Get packages
         run: flutter pub get
