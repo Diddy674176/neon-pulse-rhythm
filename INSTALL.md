@@ -1,83 +1,63 @@
-# Install AETHER BEAT on Samsung Galaxy (sideload)
+# Install AETHER BEAT on Samsung Galaxy (no PC required)
 
-Free local path — no paid CI / Cloud Agents required.
+## Easiest path — download the free CI APK
 
-## Requirements
+GitHub Actions builds a release APK for you (free):
 
-- A computer with **Flutter 3.22+** (Dart 3.3+) and Android SDK
-- USB cable + Galaxy phone (S26 Ultra class or any Android 7+)
-- USB debugging enabled on the phone
+1. Open **Actions**: https://github.com/Diddy674176/neon-pulse-rhythm/actions
+2. Open the latest **Build APK** run (branch `feat/vertical-slice`)
+3. Wait until it shows green / success (first run can take several minutes)
+4. Scroll to **Artifacts** → download **aether-beat-apk**
+5. Unzip — inside is `app-release.apk`
+6. Send that file to your Galaxy (Drive, Messages, cable, Samsung Flow, etc.)
+7. On the phone: open it in **My Files** → allow **Install unknown apps** for that app if asked → Install → open **AETHER BEAT**
 
-### Enable developer options (Galaxy)
+You can also start a build manually: **Actions → Build APK → Run workflow** (choose `feat/vertical-slice`).
 
-1. **Settings → About phone → Software information**
-2. Tap **Build number** seven times
-3. Back → **Developer options** → enable **USB debugging**
-4. (Optional) Enable **Install via USB**
+> Artifacts expire after **14 days**. Re-run the workflow anytime for a fresh APK.
 
-## Build the APK (on your machine)
+## First run — play & import MP3
+
+1. Open **AETHER BEAT**
+2. **Play** / **Songs** → built-in **Circuit Mirage**, or **IMPORT MP3** for your own tracks
+3. Set title, artist, BPM, difficulty, lanes (4/5/6), offset → **IMPORT & GENERATE**
+4. Play from **Songs** — timing uses the audio clock
+5. Long-press an imported song to delete it
+6. If hits feel early/late: **Settings → Calibration**
+
+## Optional — build on a PC
+
+Only needed if you want to compile locally:
 
 ```bash
 git clone https://github.com/Diddy674176/neon-pulse-rhythm.git
 cd neon-pulse-rhythm
-git checkout feat/vertical-slice   # or feat/mp3-import-apk if that branch exists
+git checkout feat/vertical-slice
 flutter pub get
 flutter test
 flutter build apk --release
 ```
 
-APK output:
+APK: `build/app/outputs/flutter-apk/app-release.apk`
 
-```text
-build/app/outputs/flutter-apk/app-release.apk
-```
+USB install: `adb install -r build/app/outputs/flutter-apk/app-release.apk`
 
-Debug build (faster iterate):
+### Enable USB debugging (Galaxy)
 
-```bash
-flutter build apk --debug
-```
-
-## Install via USB (`adb`)
-
-```bash
-adb devices
-adb install -r build/app/outputs/flutter-apk/app-release.apk
-```
-
-If you see more than one device, pick with `-s <serial>`.
-
-## Install without cable (wireless / file copy)
-
-1. Copy `app-release.apk` to the phone (Drive, Bluetooth, USB storage, Samsung Flow, etc.)
-2. Open the file in **My Files**
-3. If blocked: **Settings → Security / Privacy → Install unknown apps** → allow the file manager
-4. Tap install → open **AETHER BEAT**
-
-## First run — import an MP3
-
-1. Main menu → **IMPORT MP3** (or **SONGS** → **IMPORT MP3** FAB)
-2. Pick an `.mp3` from device storage
-3. Set title, artist, BPM, difficulty, lanes (4/5/6), offset
-4. Tap **IMPORT & GENERATE** — file is copied into app documents and a beat-grid chart is generated offline
-5. Play from **SONGS** — timing still uses the **audio clock** engine
-
-Long-press an imported song on the Songs list to delete it.
+1. **Settings → About phone → Software information**
+2. Tap **Build number** seven times
+3. **Developer options** → **USB debugging**
 
 ## Signing note
 
-Release builds in this repo currently use the **debug keystore** so you can sideload immediately. For Play Store / permanent installs across reinstalls, create your own keystore and point `android/app/build.gradle` `signingConfigs.release` at it.
-
-## Agent / CI note
-
-The shared build agent used for some repo automation may not have the Flutter SDK installed. Prefer building on your PC or laptop with the free Flutter SDK from https://docs.flutter.dev/get-started/install.
+Release builds use the **debug keystore** so you can sideload immediately. For Play Store / permanent signing across reinstalls, add your own keystore later.
 
 ## Troubleshooting
 
 | Issue | Fix |
 |-------|-----|
-| `adb` empty | Unlock phone, accept RSA prompt, retry cable / port |
-| Install blocked | Allow unknown apps for My Files / adb |
-| No sound on import | Confirm file is `.mp3`; re-import; check Settings volumes |
-| Chart feels early/late | Use **Settings → Calibration**, or re-import with Offset (ms) |
-| Permission denied picking file | Use the system file picker (SAF); grant music/audio access if prompted |
+| No Artifacts on Actions run | Wait for green success; failed runs have no APK |
+| Install blocked | **Settings → Security → Install unknown apps** → allow My Files / Chrome |
+| No sound on import | Confirm `.mp3`; check Settings volumes |
+| Chart early/late | Calibration, or re-import with Offset (ms) |
+| Permission denied picking file | Use system picker; grant music/audio access if prompted |
