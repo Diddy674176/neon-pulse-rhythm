@@ -3,6 +3,7 @@ import '../app_state.dart';
 import '../ui/neon_widgets.dart';
 import '../vfx/neon_palette.dart';
 import 'song_select_screen.dart';
+import 'import_song_screen.dart';
 import 'settings_screen.dart';
 import 'profile_screen.dart';
 
@@ -57,6 +58,14 @@ class MainMenuScreen extends StatelessWidget {
                 MaterialPageRoute(
                   builder: (_) => const SongSelectScreen(practice: false),
                 ),
+              ),
+            ),
+            NeonMenuButton(
+              label: 'IMPORT MP3',
+              icon: Icons.file_upload,
+              accent: NeonPalette.violet,
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const ImportSongScreen()),
               ),
             ),
             NeonMenuButton(

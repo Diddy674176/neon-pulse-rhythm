@@ -8,21 +8,34 @@ android {
     namespace = "com.aetherbeat.aether_beat"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
     kotlinOptions { jvmTarget = JavaVersion.VERSION_1_8 }
+
     defaultConfig {
         applicationId = "com.aetherbeat.aether_beat"
-        minSdk = flutter.minSdkVersion
+        minSdk = Math.max(flutter.minSdkVersion, 24)
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
     buildTypes {
-        release { signingConfig = signingConfigs.debug }
+        release {
+            // Debug keystore for local sideload / Galaxy install until a release keystore is added.
+            signingConfig = signingConfigs.debug
+            minifyEnabled false
+            shrinkResources false
+        }
     }
 }
-flutter { source = "../.." }
-dependencies { implementation "androidx.core:core-ktx:1.13.1" }
+
+flutter {
+    source = "../.."
+}
+
+dependencies {
+    implementation "androidx.core:core-ktx:1.13.1"
+}
