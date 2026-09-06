@@ -1,6 +1,13 @@
 # Audio assets
 
-- `circuit_mirage.ogg` — preferred binary (generate via tools + ffmpeg)
-- `circuit_mirage.ogg.b64` — base64 sidecar for text-only pushes / fallback loader
+Built-in tracks (original generated):
+- `circuit_mirage.ogg` — demo anthem
+- `pulse_drift.ogg` — mid-tempo drift
+- `void_step.ogg` — faster punch
 
-`AudioService.loadAssetOrB64` tries the binary asset first, then decodes `.b64`.
+Hit SFX (short):
+- `hit_perfect.ogg` / `hit_great.ogg` / `hit_good.ogg` / `hit_miss.ogg`
+
+Each `.ogg` has `.b64` / `.b64.0`+`.b64.1` sidecars for text-only fallback via `AudioService.loadAssetOrB64`.
+
+Regenerate: `python3 tools/generate_feel_assets.py`
