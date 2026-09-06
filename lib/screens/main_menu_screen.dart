@@ -15,35 +15,34 @@ class MainMenuScreen extends StatelessWidget {
     final hz = AppState.instance.refresh.bucket();
     return SafeNeonScaffold(
       body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
+        padding: const EdgeInsets.symmetric(horizontal: 28),
         child: Column(
           children: [
-            const SizedBox(height: 36),
+            const SizedBox(height: 48),
             const Text(
               'AETHER BEAT',
               style: TextStyle(
-                color: NeonPalette.cyan,
-                fontSize: 36,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 6,
-                shadows: [
-                  Shadow(color: NeonPalette.magenta, blurRadius: 18),
-                ],
+                color: NeonPalette.text,
+                fontSize: 34,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 3.5,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Text(
-              'NEON RHYTHM  ·  ${hz}Hz PANEL',
+              'TAP THE TILES  ·  ${hz}Hz',
               style: const TextStyle(
                 color: NeonPalette.muted,
-                letterSpacing: 3,
+                letterSpacing: 2,
                 fontSize: 12,
+                fontWeight: FontWeight.w500,
               ),
             ),
             const Spacer(),
             NeonMenuButton(
               label: 'PLAY',
-              icon: Icons.play_arrow,
+              icon: Icons.play_arrow_rounded,
+              filled: true,
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => const SongSelectScreen(practice: false),
@@ -52,8 +51,7 @@ class MainMenuScreen extends StatelessWidget {
             ),
             NeonMenuButton(
               label: 'SONGS',
-              icon: Icons.library_music,
-              accent: NeonPalette.magenta,
+              icon: Icons.library_music_outlined,
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => const SongSelectScreen(practice: false),
@@ -62,8 +60,7 @@ class MainMenuScreen extends StatelessWidget {
             ),
             NeonMenuButton(
               label: 'IMPORT MP3',
-              icon: Icons.file_upload,
-              accent: NeonPalette.violet,
+              icon: Icons.file_upload_outlined,
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const ImportSongScreen()),
               ),
@@ -71,7 +68,6 @@ class MainMenuScreen extends StatelessWidget {
             NeonMenuButton(
               label: 'PRACTICE',
               icon: Icons.fitness_center,
-              accent: NeonPalette.violet,
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => const SongSelectScreen(practice: true),
@@ -80,8 +76,7 @@ class MainMenuScreen extends StatelessWidget {
             ),
             NeonMenuButton(
               label: 'SETTINGS',
-              icon: Icons.settings,
-              accent: NeonPalette.amber,
+              icon: Icons.settings_outlined,
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const SettingsScreen()),
               ),
@@ -89,17 +84,20 @@ class MainMenuScreen extends StatelessWidget {
             NeonMenuButton(
               label: 'PROFILE',
               icon: Icons.person_outline,
-              accent: NeonPalette.lime,
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const ProfileScreen()),
               ),
             ),
             const Spacer(),
             const Text(
-              'AUDIO CLOCK TIMING  ·  OFFLINE',
-              style: TextStyle(color: NeonPalette.muted, fontSize: 11, letterSpacing: 2),
+              'AUDIO-CLOCK TIMING  ·  OFFLINE',
+              style: TextStyle(
+                color: NeonPalette.muted,
+                fontSize: 11,
+                letterSpacing: 1.5,
+              ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
           ],
         ),
       ),
