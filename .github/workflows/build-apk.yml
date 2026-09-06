@@ -38,6 +38,9 @@ jobs:
       - name: Flutter version
         run: flutter --version
 
+      - name: Restore Android binaries
+        run: bash android/restore_binaries.sh
+
       - name: Write android/local.properties
         run: |
           {
@@ -46,15 +49,6 @@ jobs:
             if [ -n "${ANDROID_SDK_ROOT:-}" ]; then echo "sdk.dir=$ANDROID_SDK_ROOT"; fi
           } > android/local.properties
           cat android/local.properties
-
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "8.14"
-
-      - name: Ensure Gradle wrapper
-        working-directory: android
-        run: gradle wrapper --gradle-version 8.14
 
       - name: Get packages
         run: flutter pub get
