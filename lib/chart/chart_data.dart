@@ -45,4 +45,17 @@ class ChartData {
       ],
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'songId': songId,
+        'title': title,
+        'artist': artist,
+        'bpm': bpm,
+        'offsetMs': offsetMs,
+        'durationMs': durationMs,
+        'audio': audioAsset,
+        'laneCount': laneCount,
+        'difficulty': difficulty,
+        'notes': notes.map((n) => n.toJson()).toList(),
+      };
 }
