@@ -1,65 +1,38 @@
 # AETHER BEAT
 
-Original neon / cyberpunk rhythm game for tall Android panels (Samsung Galaxy S26 Ultra class).  
-Built with **Flutter + Flame**. Offline playable vertical slice + **MP3 import**.
+Original piano-tiles-inspired rhythm game for tall Android panels and web.
+Built with **Flutter + Flame**. Offline playable + **MP3 import** (native). Clean dark UI.
 
-> Completely original IP — not affiliated with Guitar Hero, Beat Saber, or any other rhythm franchise.
+> Completely original IP — not affiliated with Magic Tiles 3 or any other rhythm franchise.
 
-## Play in browser (free)
+## Play
 
-**Live:** [https://diddy674176.github.io/neon-pulse-rhythm/](https://diddy674176.github.io/neon-pulse-rhythm/)  
-(GitHub Pages from the `gh-pages` branch — enable under **Settings → Pages → Deploy from branch → `gh-pages` / root** if the URL 404s.)
+**Live web:** https://diddy674176.github.io/neon-pulse-rhythm/
 
-### Keyboard controls (web / desktop)
+## Highlights
 
-| Lanes | Keys |
-|-------|------|
-| 4 | `D` `F` `J` `K` — or `1`–`4` |
-| 5 | `D` `F` `Space` `J` `K` — or `1`–`5` |
-| 6 | `S` `D` `F` `J` `K` `L` — or `1`–`6` |
+- **Audio-clock timing** — hit detection uses `noteTime - currentAudioTime` only.
+- **Piano-tiles layout** — dark tiles scroll down 4 columns to a white hit line.
+- **Auto Play** — toggle **AUTO PLAY ON/OFF** on song select or during gameplay; Perfect-timed hits fire automatically (demos / lag testing). Score and judgments still update.
+- **Reduced VFX** (default) — pooled paints, cached HUD text, fewer allocations for smoother phone/web FPS.
+- Clean UI: deep black, white text, one accent — no neon spam.
 
-Touch / mouse: tap (or click) each lane. Swipe on a lane for swipe notes.
+## Auto Play how-to
 
-### Local web preview (no Pages)
+1. Open **SONGS** (or start a run).
+2. Tap **AUTO PLAY OFF** so it becomes **AUTO PLAY ON** (also in **SETTINGS**).
+3. Start a song — tiles are hit automatically within the Perfect window.
+4. Toggle off anytime to play manually.
 
-```bash
-flutter build web --release --base-href "/"
-cd build/web && python3 -m http.server 8080
-# open http://localhost:8080/
-```
+## Known limits
 
-CI also deploys web via `.github/workflows/deploy-web.yml` (Flutter build → `gh-pages`).
+- Web may skip MP3 import (file picker / storage); built-in demo tracks work.
+- Reduced settings surface on web (lanes/note size still available on native/full settings).
+- Auto Play is for demos/lag tests — not a substitute for skill calibration.
 
-## Features
-
-- **Audio-clock timing** — hit detection uses `noteTime - currentAudioTime` only. Rendering FPS is independent.
-- Judgment windows: **Perfect ±25ms**, **Great ±50ms**, **Good ±90ms** (configurable).
-- Calibration screen for audio / touch latency offsets.
-- 4 lanes by default (settings + per-import: **4 / 5 / 6**).
-- Note types: **tap**, **hold**, **swipe**.
-- Main menu: Play, Songs, **Import MP3**, Practice, Settings, Profile.
-- Song select with demo track **Circuit Mirage** plus **user-imported MP3 library** (offline).
-- Auto chart generation from BPM + duration (phrase-aware density by difficulty — not random spam).
-- Gameplay HUD: score, combo, multiplier, accuracy.
-- Results: grade + judgment counts.
-- Practice: restart, show timing deltas, speed stub (pitch-preserve TBD).
-- Settings: volumes, haptics, performance mode, accessibility stubs.
-- Refresh-rate awareness (60 / 90 / 120 bucket detection).
-
-## Run
-
-Requirements: Flutter 3.22+ (Dart 3.3+), Android toolchain for device/emulator.
+## Build
 
 ```bash
-flutter pub get
 flutter test
-flutter run
+flutter build web --release --base-href "/neon-pulse-rhythm/"
 ```
-
-See **[INSTALL.md](INSTALL.md)** for APK sideload + browser play.
-
-App label: **AETHER BEAT** (`applicationId` `com.aetherbeat.aether_beat`).
-
-## License
-
-Original project content © repo owner. Demo audio is procedural / original.
