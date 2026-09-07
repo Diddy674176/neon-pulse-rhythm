@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'audio/audio_service.dart';
 import 'audio/sfx_service.dart';
 import 'haptics/haptics_service.dart';
@@ -33,6 +34,10 @@ class AppState {
     } catch (e) {
       warnings.add('Settings: $e');
       settings = GameSettings();
+    }
+    // Web builds stay on reduced VFX for smoother note updates.
+    if (kIsWeb) {
+      settings.reducedVfx = true;
     }
 
     try {
