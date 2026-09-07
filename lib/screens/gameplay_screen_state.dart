@@ -8,16 +8,23 @@ class _GameplayScreenState extends State<GameplayScreen> {
   final Map<int, Offset> _downs = {};
   final Map<int, int> _lanes = {};
   Timer? _posPoll;
+  /// In-run autoplay label — ValueNotifier avoids rebuilding GameWidget on toggle.
+  late final ValueNotifier<bool> _autoPlayOn;
 
   @override
   void initState() {
     super.initState();
+    _autoPlayOn = ValueNotifier(AppState.instance.settings.autoPlay);
     _boot();
   }
 
   Future<void> _boot() async {
     try {
       final app = AppState.instance;
+      // Web: keep reduced VFX on for smoother frames.
+      if (kIsWeb) {
+        app.settings.reducedVfx = true;
+      }
       final chart = await ChartLoader().loadForSong(widget.song);
       final timing = TimingEngine(
         audioLatencyOffsetMs: app.settings.audioLatencyOffsetMs,
@@ -32,7 +39,7 @@ class _GameplayScreenState extends State<GameplayScreen> {
             isImported: widget.song.isImported,
           );
           clock = audio;
-          _posPoll = Timer.periodic(const Duration(milliseconds: 16), (_) {
+          _posPoll = Timer.periodic(const Duration(milliseconds: 32), (_) {
             audio.refreshPosition();
           });
         } catch (_) {
@@ -113,8 +120,9 @@ class _GameplayScreenState extends State<GameplayScreen> {
     final s = AppState.instance.settings;
     s.autoPlay = !s.autoPlay;
     _game?.autoPlay = s.autoPlay;
+    _autoPlayOn.value = s.autoPlay;
     AppState.instance.persistSettings();
-    setState(() {});
+    // Do NOT setState — keeps GameWidget from rebuilding mid-run.
   }
 
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
@@ -138,6 +146,7 @@ class _GameplayScreenState extends State<GameplayScreen> {
   @override
   void dispose() {
     _posPoll?.cancel();
+    _autoPlayOn.dispose();
     _clock?.pause();
     super.dispose();
   }
@@ -161,7 +170,6 @@ class _GameplayScreenState extends State<GameplayScreen> {
         ),
       );
     }
-    final autoOn = AppState.instance.settings.autoPlay;
     return Scaffold(
       backgroundColor: NeonPalette.bg,
       body: Focus(
@@ -223,19 +231,23 @@ class _GameplayScreenState extends State<GameplayScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    TextButton(
-                      onPressed: _toggleAutoPlay,
-                      style: TextButton.styleFrom(
-                        foregroundColor:
-                            autoOn ? NeonPalette.accent : NeonPalette.muted,
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                      ),
-                      child: Text(
-                        autoOn ? 'AUTO PLAY ON' : 'AUTO PLAY OFF',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.8,
-                          fontSize: 12,
+                    // Single in-run Auto Play toggle (no canvas duplicate).
+                    ValueListenableBuilder<bool>(
+                      valueListenable: _autoPlayOn,
+                      builder: (_, autoOn, __) => TextButton(
+                        onPressed: _toggleAutoPlay,
+                        style: TextButton.styleFrom(
+                          foregroundColor:
+                              autoOn ? NeonPalette.accent : NeonPalette.muted,
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                        ),
+                        child: Text(
+                          autoOn ? 'AUTO PLAY ON' : 'AUTO PLAY OFF',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.8,
+                            fontSize: 12,
+                          ),
                         ),
                       ),
                     ),
@@ -249,7 +261,7 @@ class _GameplayScreenState extends State<GameplayScreen> {
                         onPressed: () {
                           final s = AppState.instance.settings;
                           s.showTimingNumbers = !s.showTimingNumbers;
-                          setState(() {});
+                          // Timing overlay is read from settings each paint — no setState.
                         },
                         child: const Text('TIMING',
                             style: TextStyle(color: NeonPalette.muted, fontSize: 12)),
