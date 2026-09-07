@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -54,9 +53,26 @@ class AudioService implements AudioClock {
     await setVolumes();
   }
 
+  String? _mimeForExt(String ext) {
+    switch (ext.toLowerCase()) {
+      case 'mp3':
+      case 'mpeg':
+        return 'audio/mpeg';
+      case 'wav':
+        return 'audio/wav';
+      case 'ogg':
+        return 'audio/ogg';
+      case 'm4a':
+      case 'aac':
+        return 'audio/mp4';
+      default:
+        return null;
+    }
+  }
+
   Future<void> _playBytes(Uint8List bytes, {String ext = 'ogg'}) async {
     if (kIsWeb) {
-      await _player.setSource(BytesSource(bytes));
+      await _player.setSource(BytesSource(bytes, mimeType: _mimeForExt(ext)));
     } else {
       final path = await nfs.writeTempAudioBytes(bytes, ext);
       await _player.setSource(DeviceFileSource(path));
@@ -101,7 +117,9 @@ class AudioService implements AudioClock {
   /// Load a device file (e.g. imported MP3 under app documents).
   Future<void> loadFile(String path) async {
     if (kIsWeb) {
-      throw UnsupportedError('Imported device files are not supported on web.');
+      throw UnsupportedError(
+        'Device file paths are unavailable on web — use loadBytes / BytesSource.',
+      );
     }
     if (!await nfs.pathExists(path)) {
       throw StateError('Audio file missing: $path');
@@ -110,12 +128,20 @@ class AudioService implements AudioClock {
     await setVolumes();
   }
 
-  /// Prefer procedural beds for built-in catalog; device file for imports.
+  /// Prefer asset/b64 for catalog tracks; device file or bytes for imports.
   Future<void> loadSongAudio({
     required String audioPath,
     required bool isImported,
+    Uint8List? bytes,
   }) async {
     if (isImported) {
+      if (bytes != null && bytes.isNotEmpty) {
+        await _playBytes(bytes, ext: 'mp3');
+        return;
+      }
+      if (kIsWeb) {
+        throw StateError('Imported track bytes missing for web playback.');
+      }
       await loadFile(audioPath);
     } else {
       // Prefer tiny procedural beds for built-in catalog (reliable on Pages).
