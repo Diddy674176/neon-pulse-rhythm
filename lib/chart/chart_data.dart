@@ -42,7 +42,7 @@ class ChartData {
       notes: [
         for (var i = 0; i < rawNotes.length; i++)
           ChartNote.fromJson(Map<String, dynamic>.from(rawNotes[i] as Map), index: i),
-      ],
+      ]..sort((a, b) => a.timeMs.compareTo(b.timeMs)),
     );
   }
 
