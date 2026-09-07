@@ -37,20 +37,36 @@ class GameplayController {
   Judgment lastJudgment = Judgment.none;
   double lastDeltaMs = 0;
 
+  /// First index that may still need work — skips a long resolved prefix.
+  int _scanFrom = 0;
+
   /// Reused buffer — avoids allocating a new List every frame.
   final List<NoteRuntime> _visibleBuf = <NoteRuntime>[];
 
   double get audioTimeMs => clock.currentTimeMs;
 
+  void _advanceScan() {
+    while (_scanFrom < notes.length && notes[_scanFrom].resolved) {
+      _scanFrom++;
+    }
+  }
+
   List<NoteRuntime> visibleNotes() {
     final t = audioTimeMs;
     _visibleBuf.clear();
     final latePad = timing.windows.goodMs + 200;
-    for (final n in notes) {
-      if (n.resolved && n.note.type != NoteType.hold) continue;
+    _advanceScan();
+    for (var i = _scanFrom; i < notes.length; i++) {
+      final n = notes[i];
+      if (n.resolved) continue;
       final start = n.note.timeMs - approachMs;
+      if (t < start) {
+        // Notes are time-sorted in charts; later ones are also not visible yet.
+        if (n.note.timeMs - t > approachMs + 50) break;
+        continue;
+      }
       final end = (n.note.endTimeMs ?? n.note.timeMs) + latePad;
-      if (t >= start && t <= end) _visibleBuf.add(n);
+      if (t <= end) _visibleBuf.add(n);
     }
     return _visibleBuf;
   }
@@ -60,24 +76,26 @@ class GameplayController {
     final t = audioTimeMs;
     if (autoPlay) _runAutoPlay(t);
 
-    for (final n in notes) {
+    _advanceScan();
+    for (var i = _scanFrom; i < notes.length; i++) {
+      final n = notes[i];
       if (n.resolved) continue;
+
       if (n.note.type == NoteType.hold && n.holdActive) {
-        if (timing.shouldAutoMiss(
-          noteTimeMs: n.note.endTimeMs ?? n.note.timeMs,
-          rawAudioTimeMs: t,
-        )) {
+        final end = n.note.endTimeMs ?? n.note.timeMs;
+        // Held through the late window → credit the start judgment (kept the hold).
+        if (timing.shouldAutoMiss(noteTimeMs: end, rawAudioTimeMs: t)) {
+          final grade = n.startJudgment ?? Judgment.perfect;
           _resolve(
             n,
-            Judgment.miss,
-            timing.deltaMs(
-              noteTimeMs: n.note.endTimeMs ?? n.note.timeMs,
-              rawAudioTimeMs: t,
-            ),
+            grade == Judgment.miss ? Judgment.good : grade,
+            timing.deltaMs(noteTimeMs: end, rawAudioTimeMs: t),
           );
         }
         continue;
       }
+
+      // Never pressed (or hold never started) → miss after start window.
       if (timing.shouldAutoMiss(noteTimeMs: n.note.timeMs, rawAudioTimeMs: t)) {
         _resolve(
           n,
@@ -97,7 +115,9 @@ class GameplayController {
   /// Fire Perfect-timed hits when |noteTime - audioTime| ≤ Perfect window.
   void _runAutoPlay(double t) {
     final perfect = timing.windows.perfectMs.toDouble();
-    for (final n in notes) {
+    _advanceScan();
+    for (var i = _scanFrom; i < notes.length; i++) {
+      final n = notes[i];
       if (n.resolved) continue;
 
       if (n.note.type == NoteType.hold) {
@@ -112,8 +132,9 @@ class GameplayController {
           }
         } else {
           final end = n.note.endTimeMs ?? n.note.timeMs;
-          final err = timing.absErrorMs(noteTimeMs: end, rawAudioTimeMs: t);
-          if (err <= perfect) {
+          // Release at/near end (not early). Prefer exact end or slightly late.
+          final d = timing.deltaMs(noteTimeMs: end, rawAudioTimeMs: t);
+          if (d <= perfect) {
             handleInput(LaneInputEvent(
               kind: InputKind.holdEnd,
               lane: n.note.lane,
@@ -145,25 +166,40 @@ class GameplayController {
   }
 
   void handleInput(LaneInputEvent e) {
-    final candidates = notes.where((n) {
-      if (n.resolved) return false;
-      if (n.laneMismatch(e.lane)) return false;
-      return _matchesKind(n, e);
-    }).toList();
+    final candidates = <NoteRuntime>[];
+    _advanceScan();
+    for (var i = _scanFrom; i < notes.length; i++) {
+      final n = notes[i];
+      if (n.resolved) continue;
+      if (n.laneMismatch(e.lane)) continue;
+      if (!_matchesKind(n, e)) continue;
+      candidates.add(n);
+    }
 
     if (candidates.isEmpty) return;
 
     candidates.sort((a, b) {
-      final da = (a.note.timeMs - e.audioTimeMs).abs();
-      final db = (b.note.timeMs - e.audioTimeMs).abs();
+      final ta = e.kind == InputKind.holdEnd
+          ? (a.note.endTimeMs ?? a.note.timeMs)
+          : a.note.timeMs;
+      final tb = e.kind == InputKind.holdEnd
+          ? (b.note.endTimeMs ?? b.note.timeMs)
+          : b.note.timeMs;
+      final da = (ta - e.audioTimeMs).abs();
+      final db = (tb - e.audioTimeMs).abs();
       return da.compareTo(db);
     });
 
     final n = candidates.first;
 
     if (e.kind == InputKind.holdStart && n.note.type == NoteType.hold) {
+      if (n.holdActive) return;
       final j = timing.judge(noteTimeMs: n.note.timeMs, rawAudioTimeMs: e.audioTimeMs);
       if (j == Judgment.miss) {
+        // Press outside the start window — only resolve if inside extended check.
+        if (!timing.isInHitWindow(noteTimeMs: n.note.timeMs, rawAudioTimeMs: e.audioTimeMs)) {
+          return;
+        }
         _resolve(
           n,
           Judgment.miss,
@@ -172,21 +208,27 @@ class GameplayController {
         return;
       }
       n.holdActive = true;
+      n.startJudgment = j;
       n.hitDeltaMs =
           timing.deltaMs(noteTimeMs: n.note.timeMs, rawAudioTimeMs: e.audioTimeMs);
       return;
     }
 
-    if (e.kind == InputKind.holdEnd && n.note.type == NoteType.hold && n.holdActive) {
-      final j = timing.judge(
-        noteTimeMs: n.note.endTimeMs ?? n.note.timeMs,
-        rawAudioTimeMs: e.audioTimeMs,
-      );
-      final d = timing.deltaMs(
-        noteTimeMs: n.note.endTimeMs ?? n.note.timeMs,
-        rawAudioTimeMs: e.audioTimeMs,
-      );
-      _resolve(n, j == Judgment.miss ? Judgment.good : j, d);
+    if (e.kind == InputKind.holdEnd && n.note.type == NoteType.hold) {
+      if (!n.holdActive) return;
+      final end = n.note.endTimeMs ?? n.note.timeMs;
+      final d = timing.deltaMs(noteTimeMs: end, rawAudioTimeMs: e.audioTimeMs);
+      // Released too early (well before end) → miss.
+      if (d > timing.windows.goodMs) {
+        _resolve(n, Judgment.miss, d);
+        return;
+      }
+      final endJ = timing.judge(noteTimeMs: end, rawAudioTimeMs: e.audioTimeMs);
+      final startJ = n.startJudgment ?? Judgment.perfect;
+      final grade = endJ == Judgment.miss
+          ? Judgment.miss
+          : _worse(startJ, endJ);
+      _resolve(n, grade, d);
       return;
     }
 
@@ -208,10 +250,23 @@ class GameplayController {
       case NoteType.tap:
         return e.kind == InputKind.tap;
       case NoteType.hold:
-        return e.kind == InputKind.holdStart || e.kind == InputKind.holdEnd;
+        if (e.kind == InputKind.holdStart) return !n.holdActive;
+        if (e.kind == InputKind.holdEnd) return n.holdActive;
+        return false;
       case NoteType.swipe:
         return e.kind == InputKind.swipe || e.kind == InputKind.tap;
     }
+  }
+
+  static Judgment _worse(Judgment a, Judgment b) {
+    int rank(Judgment j) => switch (j) {
+          Judgment.perfect => 0,
+          Judgment.great => 1,
+          Judgment.good => 2,
+          Judgment.miss => 3,
+          Judgment.none => 4,
+        };
+    return rank(a) >= rank(b) ? a : b;
   }
 
   void _resolve(NoteRuntime n, Judgment j, double deltaMs) {
