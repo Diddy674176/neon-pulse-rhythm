@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
@@ -50,9 +51,10 @@ class ImportedLibrary {
     await file.writeAsString(const JsonEncoder.withIndent('  ').convert(payload));
   }
 
-  /// Copy [sourcePath] into documents, generate chart, persist metadata.
+  /// Copy [sourcePath] or write [audioBytes] into documents, generate chart, persist metadata.
   Future<SongMeta> importMp3({
-    required String sourcePath,
+    String? sourcePath,
+    Uint8List? audioBytes,
     required String title,
     required String artist,
     required double bpm,
@@ -61,13 +63,21 @@ class ImportedLibrary {
     required double offsetMs,
     required int durationMs,
   }) async {
-    final sourceMp3 = File(sourcePath);
-    if (!await sourceMp3.exists()) {
-      throw const ImportException('Selected file was not found.');
+    final hasPath = sourcePath != null && sourcePath.isNotEmpty;
+    final hasBytes = audioBytes != null && audioBytes.isNotEmpty;
+    if (!hasPath && !hasBytes) {
+      throw const ImportException('No MP3 selected.');
     }
-    final lower = sourcePath.toLowerCase();
-    if (!lower.endsWith('.mp3') && !lower.endsWith('.mpeg')) {
-      throw const ImportException('Only MP3 files are supported.');
+
+    if (sourcePath != null && sourcePath.isNotEmpty) {
+      final lower = sourcePath.toLowerCase();
+      if (!lower.endsWith('.mp3') && !lower.endsWith('.mpeg')) {
+        throw const ImportException('Only MP3 files are supported.');
+      }
+      final sourceMp3 = File(sourcePath);
+      if (!await sourceMp3.exists()) {
+        throw const ImportException('Selected file was not found.');
+      }
     }
 
     final root = await _ensureRoot();
@@ -77,7 +87,11 @@ class ImportedLibrary {
 
     final audioDest = File('${songDir.path}/audio.mp3');
     try {
-      await sourceMp3.copy(audioDest.path);
+      if (audioBytes != null && audioBytes.isNotEmpty) {
+        await audioDest.writeAsBytes(audioBytes, flush: true);
+      } else {
+        await File(sourcePath!).copy(audioDest.path);
+      }
     } catch (e) {
       throw ImportException('Could not copy MP3 into app storage: $e');
     }
@@ -131,6 +145,22 @@ class ImportedLibrary {
       await dir.delete(recursive: true);
     }
   }
+
+  Future<String> readChartJson(SongMeta song) async {
+    try {
+      return await File(song.chartPath).readAsString();
+    } catch (e) {
+      throw ImportException('Could not read imported chart: $e');
+    }
+  }
+
+  Future<Uint8List> readAudioBytes(SongMeta song) async {
+    try {
+      return await File(song.audioPath).readAsBytes();
+    } catch (e) {
+      throw ImportException('Could not read imported audio: $e');
+    }
+  }
 }
 
 class ImportException implements Exception {
@@ -141,10 +171,17 @@ class ImportException implements Exception {
 }
 
 /// Probe duration via file size estimate (~128kbps MP3 ≈ 16KB/s).
-Future<int> probeAudioDurationMs(String path) async {
+Future<int> probeAudioDurationMs({String? path, Uint8List? bytes}) async {
   try {
-    final bytes = await File(path).length();
-    final estimate = ((bytes / 16000) * 1000).round();
+    int length;
+    if (bytes != null && bytes.isNotEmpty) {
+      length = bytes.lengthInBytes;
+    } else if (path != null && path.isNotEmpty) {
+      length = await File(path).length();
+    } else {
+      return 60000;
+    }
+    final estimate = ((length / 16000) * 1000).round();
     return estimate.clamp(5000, 15 * 60 * 1000);
   } catch (_) {
     return 60000;
