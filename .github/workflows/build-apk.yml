@@ -1,0 +1,68 @@
+name: Build APK
+
+on:
+  push:
+    branches:
+      - feat/vertical-slice
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  apk:
+    name: Release APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Flutter version
+        run: flutter --version
+
+      - name: Restore Android binaries
+        run: bash android/restore_binaries.sh
+
+      - name: Write android/local.properties
+        run: |
+          {
+            echo "flutter.sdk=$FLUTTER_ROOT"
+            if [ -n "${ANDROID_HOME:-}" ]; then echo "sdk.dir=$ANDROID_HOME"; fi
+            if [ -n "${ANDROID_SDK_ROOT:-}" ]; then echo "sdk.dir=$ANDROID_SDK_ROOT"; fi
+          } > android/local.properties
+          cat android/local.properties
+
+      - name: Get packages
+        run: flutter pub get
+
+      - name: Test
+        run: flutter test
+
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aether-beat-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+          retention-days: 14

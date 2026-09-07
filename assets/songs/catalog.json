@@ -1,0 +1,43 @@
+{
+  "songs": [
+    {
+      "id": "circuit_mirage",
+      "title": "Circuit Mirage",
+      "artist": "AETHER BEAT System",
+      "bpm": 128.0,
+      "durationMs": 15000,
+      "difficulties": [
+        "Normal"
+      ],
+      "chartPath": "assets/charts/circuit_mirage.json",
+      "audioPath": "assets/audio/circuit_mirage.ogg",
+      "coverColor": "#7EB6FF"
+    },
+    {
+      "id": "pulse_drift",
+      "title": "Pulse Drift",
+      "artist": "AETHER BEAT System",
+      "bpm": 110.0,
+      "durationMs": 21818,
+      "difficulties": [
+        "Normal"
+      ],
+      "chartPath": "assets/charts/pulse_drift.json",
+      "audioPath": "assets/audio/pulse_drift.ogg",
+      "coverColor": "#B8C0CC"
+    },
+    {
+      "id": "void_step",
+      "title": "Void Step",
+      "artist": "AETHER BEAT System",
+      "bpm": 140.0,
+      "durationMs": 15428,
+      "difficulties": [
+        "Normal"
+      ],
+      "chartPath": "assets/charts/void_step.json",
+      "audioPath": "assets/audio/void_step.ogg",
+      "coverColor": "#9AA3B2"
+    }
+  ]
+}
