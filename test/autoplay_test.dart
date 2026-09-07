@@ -48,4 +48,35 @@ void main() {
     expect(c.score.perfect, 2);
     expect(c.score.miss, 0);
   });
+
+  test('autoplay hold press at start and release at end', () async {
+    final clock = SimulatedAudioClock();
+    final chart = ChartData(
+      songId: 't',
+      title: 'Test',
+      artist: 'Test',
+      difficulty: 'easy',
+      bpm: 120,
+      offsetMs: 0,
+      durationMs: 5000,
+      audioAsset: '',
+      laneCount: 4,
+      notes: [
+        ChartNote(id: 'h1', timeMs: 1000, endTimeMs: 1400, lane: 0, type: NoteType.hold),
+      ],
+    );
+    final c = GameplayController(
+      chart: chart,
+      clock: clock,
+      timing: TimingEngine(),
+      autoPlay: true,
+    );
+    await clock.play();
+    await clock.seek(1000);
+    c.tick();
+    expect(c.notes[0].holdActive, isTrue);
+    await clock.seek(1400);
+    c.tick();
+    expect(c.notes[0].judgment, Judgment.perfect);
+  });
 }
