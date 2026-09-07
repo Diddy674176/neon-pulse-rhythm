@@ -25,7 +25,10 @@ class _GameplayScreenState extends State<GameplayScreen> {
       if (kIsWeb) {
         app.settings.reducedVfx = true;
       }
-      final chart = await ChartLoader().loadForSong(widget.song);
+      final chart = await ChartLoader().loadForSong(
+        widget.song,
+        imported: widget.song.isImported ? app.catalog.imported : null,
+      );
       final timing = TimingEngine(
         audioLatencyOffsetMs: app.settings.audioLatencyOffsetMs,
         touchLatencyOffsetMs: app.settings.touchLatencyOffsetMs,
@@ -34,9 +37,15 @@ class _GameplayScreenState extends State<GameplayScreen> {
       if (app.audio != null) {
         final audio = app.audio!;
         try {
+          Uint8List? importBytes;
+          if (widget.song.isImported && kIsWeb) {
+            importBytes =
+                await app.catalog.imported.readAudioBytes(widget.song);
+          }
           await audio.loadSongAudio(
             audioPath: widget.song.audioPath,
             isImported: widget.song.isImported,
+            bytes: importBytes,
           );
           clock = audio;
           _posPoll = Timer.periodic(const Duration(milliseconds: 32), (_) {
