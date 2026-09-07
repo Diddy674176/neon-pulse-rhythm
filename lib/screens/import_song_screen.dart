@@ -18,6 +18,7 @@ class ImportSongScreen extends StatefulWidget {
 class _ImportSongScreenState extends State<ImportSongScreen> {
   String? _pickedPath;
   String? _pickedName;
+  Uint8List? _pickedBytes;
   final _title = TextEditingController();
   final _artist = TextEditingController();
   final _bpm = TextEditingController(text: '128');
@@ -29,6 +30,9 @@ class _ImportSongScreenState extends State<ImportSongScreen> {
   String? _status;
 
   static const _difficulties = ['Easy', 'Normal', 'Hard', 'Expert'];
+
+  bool get _hasPick =>
+      kIsWeb ? (_pickedBytes != null && _pickedBytes!.isNotEmpty) : (_pickedPath != null);
 
   @override
   void dispose() {
@@ -44,32 +48,58 @@ class _ImportSongScreenState extends State<ImportSongScreen> {
       _error = null;
       _status = null;
     });
-    if (kIsWeb) {
-      setState(() => _error =
-          'MP3 import is not available in the web/PWA build. Use the Android APK.');
-      return;
-    }
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: const ['mp3'],
-        withData: false,
+        withData: kIsWeb,
       );
-      if (result == null || result.files.isEmpty) return;
-      final f = result.files.single;
-      final path = f.path;
-      if (path == null || path.isEmpty) {
-        setState(() => _error = 'Could not access that file path (scoped storage). Try another folder.');
+      if (result == null || result.files.isEmpty) {
+        // Cancelled — clear prior errors, keep any previous pick.
+        setState(() => _error = null);
         return;
       }
-      if (!path.toLowerCase().endsWith('.mp3')) {
+      final f = result.files.single;
+      final name = f.name;
+      final lowerName = name.toLowerCase();
+      if (!lowerName.endsWith('.mp3') && !lowerName.endsWith('.mpeg')) {
         setState(() => _error = 'Please choose an .mp3 file.');
         return;
       }
-      final base = f.name.replaceAll(RegExp(r'\.mp3$', caseSensitive: false), '');
+
+      if (kIsWeb) {
+        final bytes = f.bytes;
+        if (bytes == null || bytes.isEmpty) {
+          setState(() => _error =
+              'Could not read that file in the browser. Try a smaller MP3 or another browser.');
+          return;
+        }
+        final base = name.replaceAll(RegExp(r'\.mp3$', caseSensitive: false), '');
+        setState(() {
+          _pickedBytes = bytes;
+          _pickedPath = name;
+          _pickedName = name;
+          if (_title.text.trim().isEmpty) _title.text = base;
+        });
+        return;
+      }
+
+      final path = f.path;
+      if (path == null || path.isEmpty) {
+        setState(() => _error =
+            'Could not access that file path (scoped storage). Try another folder.');
+        return;
+      }
+      if (!path.toLowerCase().endsWith('.mp3') &&
+          !path.toLowerCase().endsWith('.mpeg')) {
+        setState(() => _error = 'Please choose an .mp3 file.');
+        return;
+      }
+      final base = name.replaceAll(RegExp(r'\.mp3$', caseSensitive: false), '');
       setState(() {
         _pickedPath = path;
-        _pickedName = f.name;
+        _pickedName = name;
+        _pickedBytes = null;
         if (_title.text.trim().isEmpty) _title.text = base;
       });
     } on PlatformException catch (e) {
@@ -81,7 +111,7 @@ class _ImportSongScreenState extends State<ImportSongScreen> {
 
   Future<void> _import() async {
     if (_busy) return;
-    if (_pickedPath == null) {
+    if (!_hasPick) {
       setState(() => _error = 'Pick an MP3 first.');
       return;
     }
@@ -97,23 +127,19 @@ class _ImportSongScreenState extends State<ImportSongScreen> {
       _status = 'Copying & generating chart…';
     });
     try {
-      if (kIsWeb) {
-        setState(() {
-          _busy = false;
-          _error =
-              'MP3 import is not available in the web/PWA build. Use the Android APK.';
-          _status = null;
-        });
-        return;
-      }
-      final sourcePath = _pickedPath!;
-      final durationMs = await probeAudioDurationMs(sourcePath);
-      // Refine duration with audioplayers when possible.
+      final durationMs = await probeAudioDurationMs(
+        path: kIsWeb ? null : _pickedPath,
+        bytes: _pickedBytes,
+      );
       var resolvedDuration = durationMs;
       final audio = AppState.instance.audio;
       if (audio != null) {
         try {
-          await audio.loadFile(sourcePath);
+          if (kIsWeb && _pickedBytes != null) {
+            await audio.loadBytes(_pickedBytes!, ext: 'mp3');
+          } else if (_pickedPath != null) {
+            await audio.loadFile(_pickedPath!);
+          }
           final d = await audio.getDuration();
           if (d != null && d.inMilliseconds > 1000) {
             resolvedDuration = d.inMilliseconds;
@@ -125,7 +151,8 @@ class _ImportSongScreenState extends State<ImportSongScreen> {
       }
 
       final meta = await AppState.instance.catalog.imported.importMp3(
-        sourcePath: sourcePath,
+        sourcePath: kIsWeb ? null : _pickedPath,
+        audioBytes: kIsWeb ? _pickedBytes : null,
         title: _title.text,
         artist: _artist.text,
         bpm: bpm,
@@ -176,9 +203,11 @@ class _ImportSongScreenState extends State<ImportSongScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text(
-                  'Pick an MP3 from your device. AETHER BEAT copies it into app storage and auto-builds a beat-grid chart from BPM + length.',
-                  style: TextStyle(color: NeonPalette.muted, height: 1.4),
+                Text(
+                  kIsWeb
+                      ? 'Pick an MP3 from your device. AETHER BEAT stores it in this browser (IndexedDB) and auto-builds a beat-grid chart from BPM + length.'
+                      : 'Pick an MP3 from your device. AETHER BEAT copies it into app storage and auto-builds a beat-grid chart from BPM + length.',
+                  style: const TextStyle(color: NeonPalette.muted, height: 1.4),
                 ),
                 const SizedBox(height: 14),
                 OutlinedButton.icon(
@@ -200,7 +229,9 @@ class _ImportSongScreenState extends State<ImportSongScreen> {
                 if (_pickedPath != null) ...[
                   const SizedBox(height: 8),
                   Text(
-                    _pickedPath!,
+                    kIsWeb
+                        ? '$_pickedName (${((_pickedBytes?.lengthInBytes ?? 0) / 1024).toStringAsFixed(0)} KB)'
+                        : _pickedPath!,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(color: NeonPalette.muted, fontSize: 11),
@@ -216,7 +247,8 @@ class _ImportSongScreenState extends State<ImportSongScreen> {
                 _field(_title, 'Title'),
                 _field(_artist, 'Artist'),
                 _field(_bpm, 'BPM', keyboard: TextInputType.number),
-                _field(_offset, 'Offset (ms)', keyboard: const TextInputType.numberWithOptions(signed: true)),
+                _field(_offset, 'Offset (ms)',
+                    keyboard: const TextInputType.numberWithOptions(signed: true)),
                 const SizedBox(height: 8),
                 Row(
                   children: [
@@ -252,7 +284,7 @@ class _ImportSongScreenState extends State<ImportSongScreen> {
                       onSelectionChanged: _busy
                           ? null
                           : (s) => setState(() => _lanes = s.first),
-                      style: ButtonStyle(
+                      style: const ButtonStyle(
                         foregroundColor: WidgetStatePropertyAll(NeonPalette.cyan),
                       ),
                     ),
