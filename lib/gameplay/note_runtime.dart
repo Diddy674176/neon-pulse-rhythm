@@ -9,6 +9,7 @@ class NoteRuntime {
   bool missed = false;
   bool holdActive = false;
   Judgment? judgment;
+  Judgment? startJudgment;
   double? hitDeltaMs;
 
   bool get resolved => hit || missed;
